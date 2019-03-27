@@ -1,0 +1,234 @@
+#include "MovableObject.h"
+
+/****************************************************
+The concept behind this class is that it will be passed
+a filename and graphics object/rendertarget, then, will
+proceed to create the needed WIC components to read, 
+decode, and then encode the bitmap file from disk into
+a compatible D2D bitmap. 
+
+We need this approach to be able to address pretty much
+any bitmap from disk/resources into the game and use it
+within Directx (D2D specifically for now)
+
+*******************************************************/
+
+void changeIndiv(float *, float, float);
+bool isTouching(MovableObject*);
+float getShipAngle(POINTF start, POINTF end);
+
+bool MovableObject::isTouching(MovableObject *planet)
+{
+	bool isTouch = false;
+	MovableObject *ship = this;
+	// The radius of the balls
+	int sRad = ship->width / 3;
+	int pRad = planet->width / 3;
+
+	// The center point of the first ball
+	POINT sCenter;
+	sCenter.x = (ship->width / 2) + ship->location->x;
+	sCenter.y = (ship->height / 2) + ship->location->y;
+
+	// The center point of the second ball
+	POINT pCenter;
+	pCenter.x = (planet->width / 2) + planet->location->x;
+	pCenter.y = (planet->width / 2) + planet->location->y;
+
+	// The distance between the two balls centers
+	double distance = sqrt(SQUARE(pCenter.x - sCenter.x) + SQUARE(pCenter.y - sCenter.y));
+
+	if (distance <= sRad + pRad)
+	{
+		isTouch = true;
+	}
+
+	return isTouch;
+}
+
+MovableObject::MovableObject()
+{
+
+}
+
+MovableObject::MovableObject(wchar_t* filename, Graphics* gfx, bool isS, int numRows, int numColumns)
+{	
+	this->gfx = gfx; //save the gfx parameter for later
+	bmp = NULL; //This needs to be NULL to start off
+	HRESULT hr;
+
+	//Step 1: Create a WIC Factory
+	IWICImagingFactory *wicFactory = NULL;
+	hr = CoCreateInstance(
+		CLSID_WICImagingFactory, //CLS ID of the object about to be made
+		NULL, //not needed here, but just denotes this isn't part of an aggregate
+		CLSCTX_INPROC_SERVER, //Indicates this DLL runs in the same process
+		IID_IWICImagingFactory, //Reference to an Interface that talks to the object
+		(LPVOID*)&wicFactory); //This is our pointer to the WICFactory, once set up.
+
+//Step 2: Create a Decoder to read file into a WIC Bitmap
+	IWICBitmapDecoder *wicDecoder = NULL;
+	hr = wicFactory->CreateDecoderFromFilename(
+		filename, //The filename we passed in already
+		NULL, //This can be used to indicate other/preferred decoders. Not something we need.
+		GENERIC_READ, //indicates we're reading from the file, vs writing, etc.
+		WICDecodeMetadataCacheOnLoad, //Needed, but would only help if we were keeping this in WIC
+		&wicDecoder); //Our pointer to the Decoder we've setup
+
+//Step 3: Read a 'frame'. We're really just moving the whole image into a frame here
+	IWICBitmapFrameDecode* wicFrame = NULL;
+	hr = wicDecoder->GetFrame(0, &wicFrame); //0 here means the first frame... or only one in our case
+	//Now, we've got a WICBitmap... we want it to be a D2D bitmap
+
+	IWICBitmapScaler *wicScaler = NULL;
+	hr = wicFactory->CreateBitmapScaler(&wicScaler);
+	
+	D2D1_SIZE_F windowSize = gfx->GetRenderTarget()->GetSize();
+	UINT X, Y;
+	wicFrame->GetSize(&X, &Y);
+
+	
+	double a = (double)(windowSize.width / numRows) / X;
+	double b = (double)(windowSize.height / numColumns) / Y;
+
+	double scalingFactor = min(a, b);
+
+	if (numColumns * numRows == 1) scalingFactor = 1;
+
+	if (SUCCEEDED(hr))
+	{
+		hr = wicScaler->Initialize(
+			wicFrame,
+			X*scalingFactor,
+			Y*scalingFactor,
+			WICBitmapInterpolationModeFant
+		);
+	}
+
+	width = X * scalingFactor;
+	height = Y * scalingFactor;
+
+
+//Step 4: Create a WIC Converter
+	IWICFormatConverter *wicConverter = NULL;
+	hr = wicFactory->CreateFormatConverter(&wicConverter);
+
+//Step 5: Configure the Converter
+	hr = wicConverter->Initialize(
+		wicScaler, //Our frame from above
+		GUID_WICPixelFormat32bppPBGRA, //Pixelformat
+		WICBitmapDitherTypeNone, //not important for us here
+		NULL, //indicates no palette is needed, not important here
+		0.0, //Alpha Transparency, can look at this later
+		WICBitmapPaletteTypeCustom //Not important for us here
+		);
+
+//Step 6: Create the D2D Bitmap! Finally!
+	gfx->GetRenderTarget()->CreateBitmapFromWicBitmap(
+		wicConverter, //Our friend the converter
+		NULL, //Can specify D2D1_Bitmap_Properties here, not needed now
+		&bmp //Our destination bmp we specified earlier in the header
+	);
+	
+	//Let us do some private object cleanup!
+	if (wicFactory) wicFactory->Release();
+	if (wicDecoder) wicDecoder->Release();
+	if (wicConverter) wicConverter->Release();
+	if (wicFrame) wicFrame->Release();
+	if (wicScaler) wicScaler->Release();
+}
+
+void changeToward(POINTF *sp, POINTF ep, POINTF speed)
+{
+	changeIndiv((float *)(&sp->x), ep.x, speed.x);
+	changeIndiv((float *)(&sp->y), ep.y, speed.y);
+}
+
+void changeIndiv(float *sp, float ep, float speed)
+{
+	float ydiff = *sp - ep;
+	if (abs(ydiff) < speed && abs(ydiff) > 0) { *sp = ep; }
+	else if (ydiff > 0) { *sp -= speed; }
+	else if (ydiff < 0) { *sp += speed; }
+}
+
+void MovableObject::moveObject(bool isEnemy)
+{
+	getShipSpeed(*this->location, *this->desintation, this->speed, isEnemy);
+	this->angle = getShipAngle(*this->location, *this->desintation);
+	changeToward(this->location, *this->desintation, *this->speed);
+}
+
+MovableObject::~MovableObject()
+{
+	if (bmp) bmp->Release();
+}
+
+float getShipAngle(POINTF start, POINTF end)
+{
+	float delta_x = start.x - end.x;
+	float delta_y = start.y - end.y;
+	float theta_radians = atan2(delta_y, delta_x);
+
+	if (theta_radians < 0)
+		theta_radians = abs(theta_radians);
+	else
+		theta_radians = 2 * M_PI - theta_radians;
+
+	return -((theta_radians * 180) / M_PI) + 180;
+}
+
+void MovableObject::getShipSpeed(POINTF start, POINTF end, POINTF *speed, bool isEnemy)
+{
+	float ax = start.x, ay = start.y, bx = end.x, by = end.y;
+	float deltaX = abs(ax - bx);
+	float deltaY = abs(ay - by);
+
+	if (deltaX > 0.1f || deltaY > 0.1f)
+	{
+		float bss = baseShipSpeed;
+		double distance = sqrt(SQUARE(ax - bx) + SQUARE(ay - by));
+		if (isEnemy && distance < gfx->GetRenderTarget()->GetSize().width / 5)
+		{
+			bss *= 1.1f;
+		}
+		speed->x = (bss / (deltaX + deltaY)) * deltaX;
+		speed->y = (bss / (deltaX + deltaY)) * deltaY;
+	}
+}
+
+void MovableObject::Draw(POINTF location, bool shouldChroma, float rotation, D2D1_VECTOR_3F vector)
+{
+
+	if (shouldChroma) 
+	{
+		ID2D1Effect *chromakeyEffect = NULL;
+	
+		//D2D1_VECTOR_3F vector{ 0.0f, 1.0f, 0.0f };
+		gfx->GetDeviceContext()->CreateEffect(CLSID_D2D1ChromaKey, &chromakeyEffect);
+
+		chromakeyEffect->SetInput(0, bmp);
+		chromakeyEffect->SetValue(D2D1_CHROMAKEY_PROP_COLOR, vector);
+		chromakeyEffect->SetValue(D2D1_CHROMAKEY_PROP_TOLERANCE, 0.8f);
+		chromakeyEffect->SetValue(D2D1_CHROMAKEY_PROP_INVERT_ALPHA, false);
+		chromakeyEffect->SetValue(D2D1_CHROMAKEY_PROP_FEATHER, false);
+	
+		gfx->GetDeviceContext()->SetTransform(D2D1::Matrix3x2F::Rotation(rotation, D2D1::Point2F(location.x, location.y)));
+		gfx->GetDeviceContext()->DrawImage(chromakeyEffect, D2D1::Point2F(location.x - bmp->GetSize().width / 2, location.y - bmp->GetSize().height / 2));
+
+		if (chromakeyEffect) chromakeyEffect->Release();
+	}
+	else
+	{
+		gfx->GetRenderTarget()->DrawBitmap(
+			bmp, //Bitmap we built from WIC
+			D2D1::RectF(location.x, location.y,
+				bmp->GetSize().width, bmp->GetSize().height), //Destination rectangle
+			0.8f, //Opacity or Alpha
+			D2D1_BITMAP_INTERPOLATION_MODE::D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR,
+			//Above - the interpolation mode to use if this object is 'stretched' or 'shrunk'. 
+			//Refer back to lecture notes on image/bitmap files
+			D2D1::RectF(location.x, location.y, bmp->GetSize().width, bmp->GetSize().height) //Source Rect
+		);
+	}
+}

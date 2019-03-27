@@ -1,0 +1,24 @@
+#pragma once
+#include "GameLevel.h"
+#include <GeometricPrimitive.h>
+
+class PlanetWindow : public GameLevel
+{
+public:
+	void Load() override;
+	void Unload() override;
+	void UnPause() override;
+	void Render() override;
+	void Update() override;
+
+	POINTF *holdingDestination;
+
+	bool visited = false;
+
+	int getScience() { return science; }
+	int getEnergy() { return energy; }
+
+	std::wstring planetName;
+	int energy = -1;
+	int science = -1;
+};
