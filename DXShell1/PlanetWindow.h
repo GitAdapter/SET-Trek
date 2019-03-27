@@ -1,6 +1,5 @@
 #pragma once
 #include "GameLevel.h"
-#include <GeometricPrimitive.h>
 
 class PlanetWindow : public GameLevel
 {

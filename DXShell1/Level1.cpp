@@ -89,8 +89,13 @@ void Level1::Render()
 	wchar_t CurrEnergyString[40];
 	swprintf_s(CurrEnergyString, L"Total Energy: %d", *gfx->Energy);
 
-	gfx->DrawScreenText(CurrScienceString, 0, windowSize.height - 30, windowSize.width/2, 30, D2D1::ColorF::White, 28);
-	gfx->DrawScreenText(CurrEnergyString, windowSize.width / 2, windowSize.height - 30, windowSize.width/2, 30, D2D1::ColorF::White, 28);
+	gfx->DrawRect(0, windowSize.height - 30, windowSize.width / 2, 30, D2D1::ColorF::DarkGray, true);
+	gfx->DrawRect(0, windowSize.height - 30, windowSize.width / 2, 30, D2D1::ColorF::Black, false);
+	gfx->DrawScreenText(CurrScienceString, 0, windowSize.height - 30, windowSize.width/2, 30, D2D1::ColorF::White, 24);
+
+	gfx->DrawRect(windowSize.width / 2, windowSize.height - 30, windowSize.width / 2, 30, D2D1::ColorF::DarkGray, true);
+	gfx->DrawRect(windowSize.width / 2, windowSize.height - 30, windowSize.width / 2, 30, D2D1::ColorF::Black, false);
+	gfx->DrawScreenText(CurrEnergyString, windowSize.width / 2, windowSize.height - 30, windowSize.width/2, 30, D2D1::ColorF::White, 24);
 	checkPlanetCollision();
 	
 	if (playerShip->isTouching(enemyShip))

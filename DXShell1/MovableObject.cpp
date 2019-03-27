@@ -21,21 +21,18 @@ bool MovableObject::isTouching(MovableObject *planet)
 {
 	bool isTouch = false;
 	MovableObject *ship = this;
-	// The radius of the balls
+
 	int sRad = ship->width / 3;
 	int pRad = planet->width / 3;
 
-	// The center point of the first ball
 	POINT sCenter;
 	sCenter.x = (ship->width / 2) + ship->location->x;
 	sCenter.y = (ship->height / 2) + ship->location->y;
 
-	// The center point of the second ball
 	POINT pCenter;
 	pCenter.x = (planet->width / 2) + planet->location->x;
 	pCenter.y = (planet->width / 2) + planet->location->y;
 
-	// The distance between the two balls centers
 	double distance = sqrt(SQUARE(pCenter.x - sCenter.x) + SQUARE(pCenter.y - sCenter.y));
 
 	if (distance <= sRad + pRad)
@@ -138,6 +135,11 @@ MovableObject::MovableObject(wchar_t* filename, Graphics* gfx, bool isS, int num
 	if (wicScaler) wicScaler->Release();
 }
 
+MovableObject::~MovableObject()
+{
+	if (bmp) bmp->Release();
+}
+
 void changeToward(POINTF *sp, POINTF ep, POINTF speed)
 {
 	changeIndiv((float *)(&sp->x), ep.x, speed.x);
@@ -157,11 +159,6 @@ void MovableObject::moveObject(bool isEnemy)
 	getShipSpeed(*this->location, *this->desintation, this->speed, isEnemy);
 	this->angle = getShipAngle(*this->location, *this->desintation);
 	changeToward(this->location, *this->desintation, *this->speed);
-}
-
-MovableObject::~MovableObject()
-{
-	if (bmp) bmp->Release();
 }
 
 float getShipAngle(POINTF start, POINTF end)

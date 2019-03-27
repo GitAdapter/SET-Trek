@@ -1,8 +1,6 @@
 #pragma once
 #include "PlanetWindow.h"
-
-#include <wincodec.h> //This is the WIC codec header - we need this to decode image files
-//Remember to add "windowscodecs.lib" to your Linker/Input/AdditionalDependencies
+#include <wincodec.h>
 
 #define SQUARE(x) ((x) * (x))
 
@@ -38,3 +36,4 @@ public:
 	//Draw bitmap to the render target
 	void Draw(POINTF, bool shouldChroma = true, float rotation = 0.0f, D2D1_VECTOR_3F vector = { 0.0f, 1.0f, 0.0f });
 };
+
