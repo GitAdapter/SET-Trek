@@ -1,0 +1,3 @@
+*.filters
+/DXShell1/*.vcxproj
+/DXShell1/x64

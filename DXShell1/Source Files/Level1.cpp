@@ -14,14 +14,14 @@ void Level1::Load()
 		*gfx->Science = 0;
 	}
 
-	background = new MovableObject(L"SectorBackground.bmp", gfx, false, 1, 1); //This is where we can specify our file system object!
+	background = new MovableObject(L"Resources\\images\\SectorBackground.bmp", gfx, false, 1, 1); //This is where we can specify our file system object!
 	background->location = new POINTF{ 0.0f, 0.0f };
-	basePlanet1 = new MovableObject(L"Planet1.bmp", gfx, false); //This is where we can specify our file system object!
-	basePlanet2 = new MovableObject(L"Planet2.bmp", gfx, false); //This is where we can specify our file system object!
-	basePlanet3 = new MovableObject(L"Planet3.bmp", gfx, false); //This is where we can specify our file system object!
-	playerShip = new MovableObject(L"ShipBase.bmp", gfx, true); //This is where we can specify our file system object!
-	playerDetails = new MovableObject(L"ShipDetail.bmp", gfx, true); //This is where we can specify our file system object!
-	enemyShip = new MovableObject(L"EnemyShip.bmp", gfx, false);
+	basePlanet1 = new MovableObject(L"Resources\\images\\Planet1.bmp", gfx, false); //This is where we can specify our file system object!
+	basePlanet2 = new MovableObject(L"Resources\\images\\Planet2.bmp", gfx, false); //This is where we can specify our file system object!
+	basePlanet3 = new MovableObject(L"Resources\\images\\Planet3.bmp", gfx, false); //This is where we can specify our file system object!
+	playerShip = new MovableObject(L"Resources\\images\\ShipBase.bmp", gfx, true); //This is where we can specify our file system object!
+	playerDetails = new MovableObject(L"Resources\\images\\ShipDetail.bmp", gfx, true); //This is where we can specify our file system object!
+	enemyShip = new MovableObject(L"Resources\\images\\EnemyShip.bmp", gfx, false);
 
 	enemyShip->location = new POINTF{ gfx->GetRenderTarget()->GetSize().width - enemyShip->width, gfx->GetRenderTarget()->GetSize().height / 2 };
 	enemyShip->desintation = playerShip->location;

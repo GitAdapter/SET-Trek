@@ -15,7 +15,7 @@ Graphics::Graphics()
 
 	std::ifstream inFile;
 	std::string pName = "";
-	inFile.open("planetNames.txt");
+	inFile.open("Resources\\planetNames.txt");
 	while (std::getline(inFile, pName))
 	{
 		if (pName.length() > 2)
