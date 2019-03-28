@@ -74,7 +74,7 @@ void Graphics::DrawScreenText(const WCHAR* string, float x, float y, float width
 {
 	CreateDeviceIndependentResources(fontSize);
 	brush->SetColor(color);
-	rendertarget->DrawTextA(string, wcslen(string), m_pTextFormat, D2D1::RectF(x, y, x + width, y + height), brush);
+	rendertarget->DrawTextA(string, UINT32(wcslen(string)), m_pTextFormat, D2D1::RectF(x, y, x + width, y + height), brush);
 }
 
 void Graphics::DrawRect(float x, float y, float width, float height, D2D1::ColorF color, bool fill)

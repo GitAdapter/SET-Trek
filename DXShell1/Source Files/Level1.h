@@ -10,6 +10,9 @@ struct Planet {
 
 class Level1 : public GameLevel
 {
+	floatPOINT* anchor = new floatPOINT;
+	floatPOINT shipPosition;
+
 	MovableObject* background;
 
 	MovableObject* basePlanet1;
@@ -18,6 +21,7 @@ class Level1 : public GameLevel
 	
 	MovableObject* playerShip;
 	MovableObject* playerDetails;
+	MovableObject* enemyPointer;
 	
 	MovableObject* enemyShip;
 

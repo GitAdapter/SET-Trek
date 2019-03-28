@@ -47,7 +47,7 @@ int WINAPI wWinMain(
 
 	srand(time(NULL));
 
-	RECT rect = { 0, 0, 1024, 768 };//Do these numbers look significant to you? What are they?
+	RECT rect = { 0, 0, 1600, 900 };//Do these numbers look significant to you? What are they?
 	AdjustWindowRectEx(&rect, WS_OVERLAPPED, false, WS_EX_OVERLAPPEDWINDOW);
 
 	//Below is another important process to understand... what are we doing?
@@ -77,19 +77,29 @@ int WINAPI wWinMain(
 	//when a message has to be dispatched.
 	MSG message;
 	message.message = WM_NULL; //Do not have this set to WM_QUIT, which has a specific context
+	graphics->message = &message;
 	while (message.message != WM_QUIT)
 	{
 		if (PeekMessage(&message, NULL, 0, 0, PM_REMOVE))
 			//This allows us to send a message to the WindowProc IF there is one
 			DispatchMessage(&message);
 		else
-		{
-			if (message.message == WM_LBUTTONDOWN)
+		{	
+			if (!graphics->canDrag)
+			{
+				graphics->isDragging = false;
+			}
+
+			if (message.message == WM_LBUTTONUP)
+			{
+				graphics->isDragging = false;
+			}
+			else if (message.message == WM_LBUTTONDOWN || graphics->isDragging * graphics->canDrag)
 			{
 				graphics->destination->x = GET_X_LPARAM(message.lParam);
 				graphics->destination->y = GET_Y_LPARAM(message.lParam);
-
-			}
+				graphics->isDragging = true;
+			}					
 			//Update Routine... we've moved the code for handling updates to GameController
 			GameController::Update();
 
@@ -97,7 +107,7 @@ int WINAPI wWinMain(
 			graphics->BeginDraw();
 			GameController::Render();
 			graphics->EndDraw();
-
+			message.message = WM_NULL;
 		}
 	}
 

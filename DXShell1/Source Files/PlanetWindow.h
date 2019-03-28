@@ -10,7 +10,7 @@ public:
 	void Render() override;
 	void Update() override;
 
-	POINTF *holdingDestination;
+	floatPOINT *holdingDestination;
 
 	bool visited = false;
 

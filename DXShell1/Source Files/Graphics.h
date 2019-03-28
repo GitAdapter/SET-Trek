@@ -39,25 +39,28 @@
 #include <DirectXMath.h>
 #include <memory>
 #include <concrt.h>
+#include "floatPoint.h"
 
 
 class Graphics
 {
 	//Below, these are all COM interfaces we're using to create D2D resources.
 	//We release them as part of the ~Graphics deconstructor... or bad things can happen
-	ID2D1Factory* factory; //The factory allows us to create many other types of D2D resources
-	ID2D1HwndRenderTarget* rendertarget; //this is typically an area in our GPU memory.. like a back buffer 
+	ID2D1Factory *factory; //The factory allows us to create many other types of D2D resources
+	ID2D1HwndRenderTarget *rendertarget; //this is typically an area in our GPU memory.. like a back buffer 	
 	
 public:
+	MSG *message;
 	ID2D1SolidColorBrush* brush; //Note this COM interface! Remember to release it!
 	IDWriteFactory *m_pDWriteFactory;
 	IDWriteTextFormat *m_pTextFormat;
 
 	std::vector<std::string> planetNames;
 
-	POINTF *destination = new POINTF();
+	floatPOINT *destination = new floatPOINT();
 
 	int *Energy, *Science;
+	bool isDragging = false, canDrag = false;
 
 	Graphics();
 	~Graphics();

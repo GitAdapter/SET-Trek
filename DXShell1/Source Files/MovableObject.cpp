@@ -15,7 +15,7 @@ within Directx (D2D specifically for now)
 
 void changeIndiv(float *, float, float);
 bool isTouching(MovableObject*);
-float getShipAngle(POINTF start, POINTF end);
+float getShipAngle(floatPOINT start, floatPOINT end);
 
 bool MovableObject::isTouching(MovableObject *planet)
 {
@@ -48,11 +48,13 @@ MovableObject::MovableObject()
 
 }
 
-MovableObject::MovableObject(wchar_t* filename, Graphics* gfx, bool isS, int numRows, int numColumns)
+MovableObject::MovableObject(wchar_t* filename, Graphics* gfx, bool isS, floatPOINT *anchor, int numRows, int numColumns)
 {	
 	this->gfx = gfx; //save the gfx parameter for later
 	bmp = NULL; //This needs to be NULL to start off
 	HRESULT hr;
+
+	anchorPoint = anchor;
 
 	//Step 1: Create a WIC Factory
 	IWICImagingFactory *wicFactory = NULL;
@@ -90,7 +92,7 @@ MovableObject::MovableObject(wchar_t* filename, Graphics* gfx, bool isS, int num
 
 	double scalingFactor = min(a, b);
 
-	if (numColumns * numRows == 1) scalingFactor = 1;
+	if (numColumns * numRows == 1) scalingFactor = max(a, b);
 
 	if (SUCCEEDED(hr))
 	{
@@ -140,7 +142,7 @@ MovableObject::~MovableObject()
 	if (bmp) bmp->Release();
 }
 
-void changeToward(POINTF *sp, POINTF ep, POINTF speed)
+void changeToward(floatPOINT *sp, floatPOINT ep, floatPOINT speed)
 {
 	changeIndiv((float *)(&sp->x), ep.x, speed.x);
 	changeIndiv((float *)(&sp->y), ep.y, speed.y);
@@ -161,7 +163,7 @@ void MovableObject::moveObject(bool isEnemy)
 	changeToward(this->location, *this->desintation, *this->speed);
 }
 
-float getShipAngle(POINTF start, POINTF end)
+float getShipAngle(floatPOINT start, floatPOINT end)
 {
 	float delta_x = start.x - end.x;
 	float delta_y = start.y - end.y;
@@ -175,7 +177,7 @@ float getShipAngle(POINTF start, POINTF end)
 	return -((theta_radians * 180) / M_PI) + 180;
 }
 
-void MovableObject::getShipSpeed(POINTF start, POINTF end, POINTF *speed, bool isEnemy)
+void MovableObject::getShipSpeed(floatPOINT start, floatPOINT end, floatPOINT *speed, bool isEnemy)
 {
 	float ax = start.x, ay = start.y, bx = end.x, by = end.y;
 	float deltaX = abs(ax - bx);
@@ -190,13 +192,16 @@ void MovableObject::getShipSpeed(POINTF start, POINTF end, POINTF *speed, bool i
 			bss *= 1.1f;
 		}
 		speed->x = (bss / (deltaX + deltaY)) * deltaX;
-		speed->y = (bss / (deltaX + deltaY)) * deltaY;
+		speed->y = sqrtf(pow(bss, 2) - pow(speed->x, 2));
 	}
 }
 
-void MovableObject::Draw(POINTF location, bool shouldChroma, float rotation, D2D1_VECTOR_3F vector)
+void MovableObject::Draw(floatPOINT drawloc, bool shouldChroma, float rotation, D2D1_VECTOR_3F vector)
 {
 
+	floatPOINT location;
+	location.x = drawloc.x - anchorPoint->x;
+	location.y = drawloc.y - anchorPoint->y;
 	if (shouldChroma) 
 	{
 		ID2D1Effect *chromakeyEffect = NULL;
@@ -212,6 +217,7 @@ void MovableObject::Draw(POINTF location, bool shouldChroma, float rotation, D2D
 	
 		gfx->GetDeviceContext()->SetTransform(D2D1::Matrix3x2F::Rotation(rotation, D2D1::Point2F(location.x, location.y)));
 		gfx->GetDeviceContext()->DrawImage(chromakeyEffect, D2D1::Point2F(location.x - bmp->GetSize().width / 2, location.y - bmp->GetSize().height / 2));
+		gfx->GetDeviceContext()->SetTransform(D2D1::Matrix3x2F::Rotation(0, D2D1::Point2F(location.x, location.y)));
 
 		if (chromakeyEffect) chromakeyEffect->Release();
 	}

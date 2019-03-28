@@ -3,9 +3,10 @@
 
 void PlanetWindow::Load()
 {
+	gfx->canDrag = false;
 	holdingDestination = gfx->destination;
 
-	gfx->destination = new POINTF{ 0.0f, 0.0f };
+	gfx->destination = new floatPOINT{ 0.0f, 0.0f };
 
 	if (energy == -1)
 	{
@@ -33,6 +34,7 @@ void PlanetWindow::UnPause()
 
 void PlanetWindow::Render()
 {
+	gfx->isDragging = false;
 	ID2D1RenderTarget *rt = gfx->GetRenderTarget();
 	D2D1_SIZE_F size = rt->GetSize();
 	gfx->DrawRect(0, 0, size.width, size.height, D2D1::ColorF::Black, true);
@@ -85,7 +87,7 @@ void PlanetWindow::Render()
 		}
 		else
 		{
-			gfx->destination = holdingDestination;
+			gfx->destination->x = -1;
 			GameController::ClosePopUp();
 		}
 	}
