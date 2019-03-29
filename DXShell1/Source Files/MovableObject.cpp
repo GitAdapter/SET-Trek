@@ -192,7 +192,12 @@ void MovableObject::getShipSpeed(floatPOINT start, floatPOINT end, floatPOINT *s
 			bss *= 1.1f;
 		}
 		speed->x = (bss / (deltaX + deltaY)) * deltaX;
-		speed->y = sqrtf(pow(bss, 2) - pow(speed->x, 2));
+		speed->y = (bss / (deltaX + deltaY)) * deltaY;
+
+		// Correcting for rounding errors
+		float diff = bss - sqrtf(pow(speed->y, 2) + pow(speed->x, 2));
+		speed->x += diff / 2;
+		speed->y += diff / 2;
 	}
 }
 

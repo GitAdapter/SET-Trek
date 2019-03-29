@@ -141,6 +141,15 @@ void Level1::Render()
 	
 	checkPlanetCollision();
 
+	if (gfx->message != nullptr)
+	{
+		if (gfx->message->message != 0)
+		{
+			swprintf_s(CurrEnergyString, L"Mesage Number: %d", gfx->message->message);
+			gfx->DrawScreenText(CurrEnergyString, windowSize.width / 2, windowSize.height - 60, windowSize.width / 2, 30, D2D1::ColorF::White, 24);
+		}
+	}
+
 	//*gfx->Energy = gfx->message->message;
 	//gfx->message->message
 	
