@@ -82,7 +82,7 @@ public:
 	void BeginDraw() { rendertarget->BeginDraw(); }
 	void EndDraw() { rendertarget->EndDraw(); }
 
-	HRESULT Graphics::CreateDeviceIndependentResources(FLOAT);
+	HRESULT CreateDeviceIndependentResources(FLOAT);
 	void ClearScreen(float r, float g, float b);
 	void DrawCircle(float c, float y, float radius, float r, float g, float b, float a);
 	//void DrawTransformCircle(float c, float y, float radius, float r, float g, float b, float a);

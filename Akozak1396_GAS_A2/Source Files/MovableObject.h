@@ -13,7 +13,7 @@ class MovableObject
 public:
 	//Constructor
 	MovableObject();
-	MovableObject(wchar_t* filename, Graphics* gfx, bool isS, floatPOINT*, int numRows = 10, int numColumns = 10);
+	MovableObject(const wchar_t* filename, Graphics* gfx, bool isS, floatPOINT*, int numRows = 10, int numColumns = 10);
 
 	void getShipSpeed(floatPOINT, floatPOINT, floatPOINT *, bool);
 	bool isTouching(MovableObject *planet);

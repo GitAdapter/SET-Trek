@@ -3,7 +3,7 @@
 #include "Level1.h"
 #include "GameOver.h"
 
-#define UNIVERSE_WIDTH 100
+#define UNIVERSE_WIDTH 250
 #define UNIVERSE_HEIGHT UNIVERSE_WIDTH
 #define CHANCE_OF_PLANET 25
 #define ENEMY_DISTANCE 500
@@ -85,7 +85,6 @@ void Level1::resetBoard()
 	enemyShip->location->y = ENEMY_DISTANCE + anchor->y;
 	enemyShip->desintation = playerShip->location;
 
-
 	int choicex = rand() % 100;
 	int choicey = rand() % 100;
 
@@ -99,8 +98,7 @@ void Level1::resetBoard()
 
 void Level1::Render()
 {
-	ID2D1RenderTarget *rt = gfx->GetRenderTarget();
-	D2D1_SIZE_F windowSize = rt->GetSize();
+	D2D1_SIZE_F windowSize = gfx->GetRenderTarget()->GetSize();
 
 	gfx->ClearScreen(0.0f, 0.0f, 0.5f);
 	background->Draw({ 0.0f, 0.0f }, false);
@@ -110,12 +108,36 @@ void Level1::Render()
 	enemyPointer->Draw(shipPosition, true, enemyShip->angle + 180);
 	enemyShip->Draw(*enemyShip->location + shipPosition, true, enemyShip->angle + 180, { 0.0f, 0.0f, 1.0f });
 
+	float xMAX = playerShip->location->x + (windowSize.width * 1.5) - shipPosition.x;
+	float xMIN = playerShip->location->x - shipPosition.x - 100;
+	float yMAX = playerShip->location->y + (windowSize.height * 1.5) - shipPosition.y;
+	float yMIN = playerShip->location->y - shipPosition.y - 100;
+
 	for (auto i = currSprites.begin(); i != currSprites.end(); i++)
 	{
 		Planet s = *i;
-		if (abs(s.obj->location->x - playerShip->location->x) < windowSize.width/1.5 && abs(s.obj->location->y - playerShip->location->y) < windowSize.height/1.5)
+		float x = i->obj->location->x, y = i->obj->location->y;
+		if (x > xMIN && x < xMAX && y > yMIN && y < yMAX)
 		{
 			s.obj->Draw(*s.obj->location + shipPosition, true, s.obj->angle);
+			if (s.obj->planetWindow == nullptr)
+			{
+				s.obj->planetWindow = new PlanetWindow();
+			}
+
+			if (playerShip->isTouching(s.obj))
+			{
+				if (!s.obj->planetWindow->visited)
+				{
+					s.obj->planetWindow->visited = true;
+					GameController::OpenPopUp(s.obj->planetWindow);
+				}
+				break;
+			}
+			else
+			{
+				s.obj->planetWindow->visited = false;
+			}
 		}
 	}
 
@@ -129,7 +151,7 @@ void Level1::Render()
 	swprintf_s(CurrScienceString, L"Enemy: %0.2f, %0.2f", enemyShip->location->x, enemyShip->location->y);
 
 	wchar_t CurrEnergyString[40];
-	swprintf_s(CurrEnergyString, L"Player: %0.2f, %0.2f", playerShip->location->x, playerShip->location->y);
+	swprintf_s(CurrEnergyString, L"Player: %0.2f, %0.2f; %0.2f", playerShip->location->x, playerShip->location->y, sqrtf(pow(playerShip->speed->x,2) + pow(playerShip->speed->y, 2)));
 
 	gfx->DrawRect(0, windowSize.height - 30, windowSize.width / 2, 30, D2D1::ColorF::DarkGray, true);
 	gfx->DrawRect(0, windowSize.height - 30, windowSize.width / 2, 30, D2D1::ColorF::Black, false);
@@ -139,8 +161,6 @@ void Level1::Render()
 	gfx->DrawRect(windowSize.width / 2, windowSize.height - 30, windowSize.width / 2, 30, D2D1::ColorF::Black, false);
 	gfx->DrawScreenText(CurrEnergyString, windowSize.width / 2, windowSize.height - 30, windowSize.width/2, 30, D2D1::ColorF::White, 24);
 	
-	checkPlanetCollision();
-
 	if (gfx->message != nullptr)
 	{
 		if (gfx->message->message != 0)
@@ -149,9 +169,6 @@ void Level1::Render()
 			gfx->DrawScreenText(CurrEnergyString, windowSize.width / 2, windowSize.height - 60, windowSize.width / 2, 30, D2D1::ColorF::White, 24);
 		}
 	}
-
-	//*gfx->Energy = gfx->message->message;
-	//gfx->message->message
 	
 	if (playerShip->isTouching(enemyShip))
 	{
@@ -166,32 +183,6 @@ void Level1::Render()
 			resetBoard();
 		}
 		gfx->isDragging = false;
-	}
-}
-
-void Level1::checkPlanetCollision()
-{
-	for (auto i = currSprites.begin(); i != currSprites.end(); i++)
-	{
-		Planet p = *i;
-		if (p.obj->planetWindow == nullptr)
-		{
-			p.obj->planetWindow = new PlanetWindow();
-		}
-
-		if (playerShip->isTouching(p.obj))
-		{
-			if (!p.obj->planetWindow->visited)
-			{
-				p.obj->planetWindow->visited = true;
-				GameController::OpenPopUp(p.obj->planetWindow);
-			}
-			break;
-		}		
-		else
-		{
-			p.obj->planetWindow->visited = false;
-		}
 	}
 }
 

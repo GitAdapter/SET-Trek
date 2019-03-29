@@ -48,7 +48,7 @@ MovableObject::MovableObject()
 
 }
 
-MovableObject::MovableObject(wchar_t* filename, Graphics* gfx, bool isS, floatPOINT *anchor, int numRows, int numColumns)
+MovableObject::MovableObject(const wchar_t* filename, Graphics* gfx, bool isS, floatPOINT *anchor, int numRows, int numColumns)
 {	
 	this->gfx = gfx; //save the gfx parameter for later
 	bmp = NULL; //This needs to be NULL to start off
