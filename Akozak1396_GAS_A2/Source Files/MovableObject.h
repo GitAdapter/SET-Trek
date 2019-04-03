@@ -7,12 +7,13 @@
 class MovableObject
 {
 	Graphics* gfx; //Reference to the Graphics class	
-	ID2D1Bitmap* bmp; //This will hold our loaded and converted Bitmap file
 	const float baseShipSpeed = 10.5f;
 
 public:
+	ID2D1Bitmap* bmp; //This will hold our loaded and converted Bitmap file
 	//Constructor
 	MovableObject();
+	MovableObject(MovableObject *m);
 	MovableObject(const wchar_t* filename, Graphics* gfx, bool isS, floatPOINT*, int numRows = 10, int numColumns = 10);
 
 	void getShipSpeed(floatPOINT, floatPOINT, floatPOINT *, bool);
@@ -21,12 +22,9 @@ public:
 
 	float width, height, angle;
 
-	int energyLevel = 0;
-	int scienceLevel = 0;
-
 	PlanetWindow *planetWindow = nullptr;
 
-	floatPOINT *anchorPoint = new floatPOINT;
+	floatPOINT *anchorPoint = new floatPOINT();
 
 	floatPOINT *desintation = new floatPOINT();
 	floatPOINT *location = new floatPOINT();

@@ -3,8 +3,6 @@
 #include "MovableObject.h"
 
 struct Planet {
-	int x = 0;
-	int y = 0;
 	MovableObject* obj = new MovableObject();
 };
 
@@ -25,7 +23,8 @@ class Level1 : public GameLevel
 	
 	MovableObject* enemyShip;
 
-	std::list<Planet> currSprites;
+	std::vector<Planet> currSprites;
+	std::vector<Planet> currVisible;
 
 public:
 	void Load() override;

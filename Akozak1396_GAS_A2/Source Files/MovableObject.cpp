@@ -48,6 +48,19 @@ MovableObject::MovableObject()
 
 }
 
+MovableObject::MovableObject(MovableObject *m)
+{
+	width = m->width;
+	height = m->height;
+	angle = m->angle;
+
+	*anchorPoint = *(m->anchorPoint);
+	*desintation = *(m->desintation);
+	*location = *(m->location);
+
+	*bmp = *(m->bmp);
+}
+
 MovableObject::MovableObject(const wchar_t* filename, Graphics* gfx, bool isS, floatPOINT *anchor, int numRows, int numColumns)
 {	
 	this->gfx = gfx; //save the gfx parameter for later
