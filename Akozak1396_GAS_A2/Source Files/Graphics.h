@@ -85,8 +85,6 @@ public:
 	HRESULT CreateDeviceIndependentResources(FLOAT);
 	void ClearScreen(float r, float g, float b);
 	void DrawCircle(float c, float y, float radius, float r, float g, float b, float a);
-	//void DrawTransformCircle(float c, float y, float radius, float r, float g, float b, float a);
 	void DrawScreenText(const WCHAR* string, float x, float y, float width, float height, D2D1::ColorF color, FLOAT);
 	void DrawRect(float x, float y, float width, float height, D2D1::ColorF color, bool fill);
-	// Hrmmm... r, g, b, a? Where do we know these from?
 };

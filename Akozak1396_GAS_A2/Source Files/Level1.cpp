@@ -208,7 +208,11 @@ void Level1::UnPause()
 void Level1::repopSector()
 {
 	D2D1_SIZE_F windowSize = gfx->GetRenderTarget()->GetSize();
+
+	
+
 	currSprites.clear();
+
 	for (int i = -UNIVERSE_HEIGHT; i < UNIVERSE_HEIGHT; i++)
 	{
 		for (int j = -UNIVERSE_WIDTH; j < UNIVERSE_WIDTH; j++)
@@ -232,7 +236,7 @@ void Level1::repopSector()
 				//delete(s.ss->location);
 				s.obj->location = new floatPOINT{ (windowSize.width / 10) * i + s.obj->width / 2, (windowSize.height / 10) * j + s.obj->height / 2 };
 
-				currSprites.push_back(s);
+				currSprites.emplace_back(s);
 			}
 		}
 	}
