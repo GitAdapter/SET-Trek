@@ -26,6 +26,7 @@ class Level1 : public GameLevel
 	MovableObject* enemyShip;
 
 	std::list<Planet> currSprites;
+	std::vector<Planet> onScreenPlanets;
 
 public:
 	void Load() override;

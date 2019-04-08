@@ -1,3 +1,10 @@
 *.filters
-/DXShell1/*.vcxproj
-/DXShell1/x64
+/Akozak1396_GAS_A2/*.vcxproj
+/Akozak1396_GAS_A2/x64
+.vs
+*.tlog
+*.obj
+*.idb
+*.log
+*.pdb
+*.ilk

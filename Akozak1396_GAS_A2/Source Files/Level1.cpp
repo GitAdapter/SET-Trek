@@ -3,7 +3,7 @@
 #include "Level1.h"
 #include "GameOver.h"
 
-#define UNIVERSE_WIDTH 250
+#define UNIVERSE_WIDTH 100
 #define UNIVERSE_HEIGHT UNIVERSE_WIDTH
 #define CHANCE_OF_PLANET 25
 #define ENEMY_DISTANCE 500
@@ -108,36 +108,47 @@ void Level1::Render()
 	enemyPointer->Draw(shipPosition, true, enemyShip->angle + 180);
 	enemyShip->Draw(*enemyShip->location + shipPosition, true, enemyShip->angle + 180, { 0.0f, 0.0f, 1.0f });
 
-	float xMAX = playerShip->location->x + (windowSize.width * 1.5) - shipPosition.x;
-	float xMIN = playerShip->location->x - shipPosition.x - 100;
-	float yMAX = playerShip->location->y + (windowSize.height * 1.5) - shipPosition.y;
-	float yMIN = playerShip->location->y - shipPosition.y - 100;
+	if (((int)playerShip->location->x % (int)(windowSize.width / 20)) == 0  || ((int)playerShip->location->y % (int)(windowSize.height / 20)) == 0)
+	{		
+		float xMAX = playerShip->location->x + (windowSize.width * 1.5) - shipPosition.x;
+		float xMIN = playerShip->location->x - shipPosition.x - 500;
+		float yMAX = playerShip->location->y + (windowSize.height * 1.5) - shipPosition.y;
+		float yMIN = playerShip->location->y - shipPosition.y - 500;
+		
+		onScreenPlanets.clear();
 
-	for (auto i = currSprites.begin(); i != currSprites.end(); i++)
+		for (auto i = currSprites.begin(); i != currSprites.end(); i++)
+		{
+			Planet s = *i;
+			float x = i->obj->location->x, y = i->obj->location->y;
+			if (x > xMIN && x < xMAX && y > yMIN && y < yMAX)
+			{
+				onScreenPlanets.push_back(s);
+				if (s.obj->planetWindow == nullptr)
+				{
+					s.obj->planetWindow = new PlanetWindow();
+				}
+			}
+		}
+	}
+
+	for (auto i = onScreenPlanets.begin(); i != onScreenPlanets.end(); i++)
 	{
 		Planet s = *i;
-		float x = i->obj->location->x, y = i->obj->location->y;
-		if (x > xMIN && x < xMAX && y > yMIN && y < yMAX)
+		s.obj->Draw(*s.obj->location + shipPosition, true, s.obj->angle);
+		
+		if (playerShip->isTouching(s.obj))
 		{
-			s.obj->Draw(*s.obj->location + shipPosition, true, s.obj->angle);
-			if (s.obj->planetWindow == nullptr)
+			if (!s.obj->planetWindow->visited)
 			{
-				s.obj->planetWindow = new PlanetWindow();
+				s.obj->planetWindow->visited = true;
+				GameController::OpenPopUp(s.obj->planetWindow);
 			}
-
-			if (playerShip->isTouching(s.obj))
-			{
-				if (!s.obj->planetWindow->visited)
-				{
-					s.obj->planetWindow->visited = true;
-					GameController::OpenPopUp(s.obj->planetWindow);
-				}
-				break;
-			}
-			else
-			{
-				s.obj->planetWindow->visited = false;
-			}
+			break;
+		}
+		else
+		{
+			s.obj->planetWindow->visited = false;
 		}
 	}
 
