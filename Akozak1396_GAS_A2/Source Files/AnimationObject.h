@@ -9,15 +9,16 @@ class AnimationObject
 	const float baseShipSpeed = 10.5f;
 
 public:
-	ID2D1Bitmap* bmp; //This will hold our loaded and converted Bitmap file
+	std::vector<ID2D1Bitmap*> bmp; //This will hold our loaded and converted Bitmap file
 	//Constructor
 	AnimationObject();
 	AnimationObject(AnimationObject *m);
-	AnimationObject(std::vector<const wchar_t*> filename, Graphics* gfx, floatPOINT*, int numRows = 10, int numColumns = 10);
+	AnimationObject(const wchar_t* filename, Graphics* gfx, floatPOINT*, int numRows, int numColumns, int frameRows, int frameColumns);
 
 	void getShipSpeed(floatPOINT, floatPOINT, floatPOINT *, bool);
 
-	float width, height, angle, frameSpeed, numFrames;
+	float width, height, angle;
+	int currentFrame = 0, frameSpeed = 60, numFrames;
 
 	PlanetWindow *planetWindow = nullptr;
 
@@ -31,6 +32,6 @@ public:
 	~AnimationObject();
 
 	//Draw bitmap to the render target
-	void Draw(floatPOINT, bool shouldChroma = true, float rotation = 0.0f, D2D1_VECTOR_3F vector = { 0.0f, 1.0f, 0.0f });
+	void Draw(floatPOINT, bool shouldChroma = false, float rotation = 0.0f, D2D1_VECTOR_3F vector = { 0.0f, 1.0f, 0.0f });
 };
 

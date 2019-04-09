@@ -20,6 +20,7 @@ AnimationObject::AnimationObject()
 
 AnimationObject::AnimationObject(AnimationObject *m)
 {
+	gfx = m->gfx;
 	width = m->width;
 	height = m->height;
 	angle = m->angle;
@@ -28,13 +29,12 @@ AnimationObject::AnimationObject(AnimationObject *m)
 	*desintation = *(m->desintation);
 	*location = *(m->location);
 
-	*bmp = *(m->bmp);
+	bmp = m->bmp;
 }
 
-AnimationObject::AnimationObject(std::vector<const wchar_t*> filename, Graphics* gfx, floatPOINT *anchor, int numRows, int numColumns)
+AnimationObject::AnimationObject(const wchar_t* filename, Graphics* gfx, floatPOINT *anchor, int numRows, int numColumns, int frameRows, int frameColumns)
 {
 	this->gfx = gfx; //save the gfx parameter for later
-	bmp = NULL; //This needs to be NULL to start off
 	HRESULT hr;
 
 	anchorPoint = anchor;
@@ -48,7 +48,12 @@ AnimationObject::AnimationObject(std::vector<const wchar_t*> filename, Graphics*
 		IID_IWICImagingFactory, //Reference to an Interface that talks to the object
 		(LPVOID*)&wicFactory); //This is our pointer to the WICFactory, once set up.
 
-//Step 2: Create a Decoder to read file into a WIC Bitmap
+	bmp.clear();	
+	int x = 0, y = 0;
+	D2D1_SIZE_F windowSize = gfx->GetRenderTarget()->GetSize();
+	UINT X, Y;
+
+	//Step 2: Create a Decoder to read file into a WIC Bitmap
 	IWICBitmapDecoder *wicDecoder = NULL;
 	hr = wicFactory->CreateDecoderFromFilename(
 		filename, //The filename we passed in already
@@ -57,72 +62,71 @@ AnimationObject::AnimationObject(std::vector<const wchar_t*> filename, Graphics*
 		WICDecodeMetadataCacheOnLoad, //Needed, but would only help if we were keeping this in WIC
 		&wicDecoder); //Our pointer to the Decoder we've setup
 
-//Step 3: Read a 'frame'. We're really just moving the whole image into a frame here
-	IWICBitmapFrameDecode* wicFrame = NULL;
-	hr = wicDecoder->GetFrame(0, &wicFrame); //0 here means the first frame... or only one in our case
-	//Now, we've got a WICBitmap... we want it to be a D2D bitmap
-
-	IWICBitmapScaler *wicScaler = NULL;
-	hr = wicFactory->CreateBitmapScaler(&wicScaler);
-
-	D2D1_SIZE_F windowSize = gfx->GetRenderTarget()->GetSize();
-	UINT X, Y;
-	wicFrame->GetSize(&X, &Y);
-
-
-	double a = (double)(windowSize.width / numRows) / X;
-	double b = (double)(windowSize.height / numColumns) / Y;
-
-	double scalingFactor = min(a, b);
-
-	if (numColumns * numRows == 1) scalingFactor = max(a, b);
-
-	if (SUCCEEDED(hr))
+	while (y < frameColumns)
 	{
-		hr = wicScaler->Initialize(
-			wicFrame,
-			X*scalingFactor,
-			Y*scalingFactor,
-			WICBitmapInterpolationModeFant
-		);
-	}
+		while (x < frameRows)
+		{
 
-	width = X * scalingFactor;
-	height = Y * scalingFactor;
+			//Step 3: Read a 'frame'. We're really just moving the whole image into a frame here
+			IWICBitmapFrameDecode* wicFrame = NULL;
+			hr = wicDecoder->GetFrame(0, &wicFrame); //0 here means the first frame... or only one in our case
+			//Now, we've got a WICBitmap... we want it to be a D2D bitmap
 
+			IWICBitmapClipper *wicClipper = NULL;
+			hr = wicFactory->CreateBitmapClipper(&wicClipper);
 
-	//Step 4: Create a WIC Converter
-	IWICFormatConverter *wicConverter = NULL;
-	hr = wicFactory->CreateFormatConverter(&wicConverter);
+			IWICBitmapScaler *wicScaler = NULL;
+			hr = wicFactory->CreateBitmapScaler(&wicScaler);
 
-	//Step 5: Configure the Converter
-	hr = wicConverter->Initialize(
-		wicScaler, //Our frame from above
-		GUID_WICPixelFormat32bppPBGRA, //Pixelformat
-		WICBitmapDitherTypeNone, //not important for us here
-		NULL, //indicates no palette is needed, not important here
-		0.0, //Alpha Transparency, can look at this later
-		WICBitmapPaletteTypeCustom //Not important for us here
-	);
+			//Step 4: Create a WIC Converter
+			IWICFormatConverter *wicConverter = NULL;
+			hr = wicFactory->CreateFormatConverter(&wicConverter);
 
-	//Step 6: Create the D2D Bitmap! Finally!
-	gfx->GetRenderTarget()->CreateBitmapFromWicBitmap(
-		wicConverter, //Our friend the converter
-		NULL, //Can specify D2D1_Bitmap_Properties here, not needed now
-		&bmp //Our destination bmp we specified earlier in the header
-	);
+			ID2D1Bitmap *frame = NULL;
+			IWICBitmapFrameDecode *f = NULL;
+			f = wicFrame;
 
+			WICRect destRect = { x * 100, y * 100, 100, 100 };
+			wicClipper->Initialize(f, &destRect);
+
+			//Step 5: Configure the Converter
+			wicConverter->Initialize(
+				wicClipper, //Our frame from above
+				GUID_WICPixelFormat32bppPBGRA, //Pixelformat
+				WICBitmapDitherTypeNone, //not important for us here
+				NULL, //indicates no palette is needed, not important here
+				0.0, //Alpha Transparency, can look at this later
+				WICBitmapPaletteTypeCustom //Not important for us here
+			);
+
+			//Step 6: Create the D2D Bitmap! Finally!
+			gfx->GetRenderTarget()->CreateBitmapFromWicBitmap(
+				wicConverter, //Our friend the converter
+				NULL, //Can specify D2D1_Bitmap_Properties here, not needed now
+				&frame //Our destination bmp we specified earlier in the header
+			);
+
+			bmp.push_back(frame);
+			x++;
+			if (wicConverter) wicConverter->Release();
+			if (wicFrame) wicFrame->Release();
+			if (wicScaler) wicScaler->Release();
+			if (wicClipper) wicClipper->Release();
+		}
+		y++;
+		x = 0;
+	}	
+	if (wicDecoder) wicDecoder->Release();
 	//Let us do some private object cleanup!
 	if (wicFactory) wicFactory->Release();
-	if (wicDecoder) wicDecoder->Release();
-	if (wicConverter) wicConverter->Release();
-	if (wicFrame) wicFrame->Release();
-	if (wicScaler) wicScaler->Release();
 }
 
 AnimationObject::~AnimationObject()
 {
-	if (bmp) bmp->Release();
+	/*for (auto i = bmp.begin(); i != bmp.end(); i++)
+	{
+		((ID2D1Bitmap*)*i)->Release();
+	}*/
 }
 
 void AnimationObject::getShipSpeed(floatPOINT start, floatPOINT end, floatPOINT *speed, bool isEnemy)
@@ -155,36 +159,12 @@ void AnimationObject::Draw(floatPOINT drawloc, bool shouldChroma, float rotation
 	floatPOINT location;
 	location.x = drawloc.x - anchorPoint->x;
 	location.y = drawloc.y - anchorPoint->y;
-	if (shouldChroma)
+
+	if (currentFrame >= bmp.size())
 	{
-		ID2D1Effect *chromakeyEffect = NULL;
-
-		//D2D1_VECTOR_3F vector{ 0.0f, 1.0f, 0.0f };
-		gfx->GetDeviceContext()->CreateEffect(CLSID_D2D1ChromaKey, &chromakeyEffect);
-
-		chromakeyEffect->SetInput(0, bmp);
-		chromakeyEffect->SetValue(D2D1_CHROMAKEY_PROP_COLOR, vector);
-		chromakeyEffect->SetValue(D2D1_CHROMAKEY_PROP_TOLERANCE, 0.8f);
-		chromakeyEffect->SetValue(D2D1_CHROMAKEY_PROP_INVERT_ALPHA, false);
-		chromakeyEffect->SetValue(D2D1_CHROMAKEY_PROP_FEATHER, false);
-
-		gfx->GetDeviceContext()->SetTransform(D2D1::Matrix3x2F::Rotation(rotation, D2D1::Point2F(location.x, location.y)));
-		gfx->GetDeviceContext()->DrawImage(chromakeyEffect, D2D1::Point2F(location.x - bmp->GetSize().width / 2, location.y - bmp->GetSize().height / 2));
-		gfx->GetDeviceContext()->SetTransform(D2D1::Matrix3x2F::Rotation(0, D2D1::Point2F(location.x, location.y)));
-
-		if (chromakeyEffect) chromakeyEffect->Release();
+		currentFrame = 0;
 	}
-	else
-	{
-		gfx->GetRenderTarget()->DrawBitmap(
-			bmp, //Bitmap we built from WIC
-			D2D1::RectF(location.x, location.y,
-				bmp->GetSize().width, bmp->GetSize().height), //Destination rectangle
-			0.8f, //Opacity or Alpha
-			D2D1_BITMAP_INTERPOLATION_MODE::D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR,
-			//Above - the interpolation mode to use if this object is 'stretched' or 'shrunk'. 
-			//Refer back to lecture notes on image/bitmap files
-			D2D1::RectF(location.x, location.y, bmp->GetSize().width, bmp->GetSize().height) //Source Rect
-		);
-	}
+	ID2D1Bitmap* bit = bmp[int(currentFrame++ / 3)];
+	D2D1_SIZE_F sz = bit->GetSize();
+	gfx->GetDeviceContext()->DrawImage(bit, D2D1::Point2F(location.x - bit->GetSize().width / 2, location.y - bit->GetSize().height / 2));
 }

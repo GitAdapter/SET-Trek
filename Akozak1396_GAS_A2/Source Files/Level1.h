@@ -1,6 +1,7 @@
 #pragma once
 #include "GameLevel.h"
 #include "MovableObject.h"
+#include "AnimationObject.h"
 
 struct Planet {
 	MovableObject* obj = new MovableObject();
@@ -23,8 +24,11 @@ class Level1 : public GameLevel
 	
 	MovableObject* enemyShip;
 
+	AnimationObject* explosion1;
+
 	std::vector<Planet> currSprites;
 	std::vector<Planet> onScreenPlanets;
+	std::vector<AnimationObject> animations;
 
 public:
 	void Load() override;

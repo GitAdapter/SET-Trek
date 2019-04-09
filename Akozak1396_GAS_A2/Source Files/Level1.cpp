@@ -37,7 +37,13 @@ void Level1::Load()
 	playerDetails = new MovableObject(L"Resources\\images\\ShipDetail.bmp", gfx, true, playerShip->anchorPoint); //This is where we can specify our file system object!
 	enemyPointer = new MovableObject(L"Resources\\images\\EnemyDirection.bmp", gfx, true, playerShip->anchorPoint, 5, 5); //This is where we can specify our file system object!
 	enemyShip = new MovableObject(L"Resources\\images\\EnemyShip.bmp", gfx, false, anchor);
-	
+
+	explosion1 = new AnimationObject(L"Resources\\images\\explosion1.png", gfx, anchor, 2, 2, 7, 10);
+	AnimationObject op = new AnimationObject(explosion1);
+	op.location = new floatPOINT{ 50.0f, 50.0f };
+	animations.push_back(op);
+
+
 	enemyShip->speed = new floatPOINT{ 1.0f, 1.0f };
 	playerShip->speed = new floatPOINT{ 0.0f, 0.0f };
 
@@ -149,6 +155,13 @@ void Level1::Render()
 		{
 			s.obj->planetWindow->visited = false;
 		}
+	}
+
+	std::list<int> deleteIndecies;
+
+	for (int i = 0; i < animations.size(); i++)
+	{
+		animations[i].Draw(*animations[i].location + shipPosition, gfx);
 	}
 
 	//wchar_t CurrScienceString[40];
