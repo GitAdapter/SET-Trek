@@ -128,6 +128,7 @@
     <Image Include="Resources\images\ShipDetail.bmp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source Files\AnimationObject.h" />
     <ClInclude Include="Source Files\floatPoint.h" />
     <ClInclude Include="Source Files\GameController.h" />
     <ClInclude Include="Source Files\GameLevel.h" />
@@ -138,6 +139,7 @@
     <ClInclude Include="Source Files\PlanetWindow.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Source Files\AnimationObject.cpp" />
     <ClCompile Include="Source Files\GameController.cpp" />
     <ClCompile Include="Source Files\GameLevel.cpp" />
     <ClCompile Include="Source Files\GameOver.cpp" />

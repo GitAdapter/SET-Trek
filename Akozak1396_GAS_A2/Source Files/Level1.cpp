@@ -19,7 +19,7 @@ void Level1::Load()
 		*gfx->Science = 0;
 	}
 
-	playerShip = new MovableObject(L"Resources\\images\\ShipBase.bmp", gfx, true, new floatPOINT()); //This is where we can specify our file system object!
+	playerShip = new MovableObject(L"Resources\\images\\1.png", gfx, true, new floatPOINT()); //This is where we can specify our file system object!
 
 	ID2D1RenderTarget *rt = gfx->GetRenderTarget();
 
@@ -104,7 +104,6 @@ void Level1::Render()
 	background->Draw({ 0.0f, 0.0f }, false);
 
 	playerShip->Draw(shipPosition, true, playerShip->angle);
-	playerDetails->Draw(shipPosition, true, playerShip->angle);
 	enemyPointer->Draw(shipPosition, true, enemyShip->angle + 180);
 	enemyShip->Draw(*enemyShip->location + shipPosition, true, enemyShip->angle + 180, { 0.0f, 0.0f, 1.0f });
 
