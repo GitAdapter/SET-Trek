@@ -28,10 +28,12 @@ public:
 	floatPOINT *location = new floatPOINT();
 	floatPOINT *speed;
 
+	bool completedAnimation = false;
+
 	//Destructor
 	~AnimationObject();
 
 	//Draw bitmap to the render target
-	void Draw(floatPOINT, bool shouldChroma = false, float rotation = 0.0f, D2D1_VECTOR_3F vector = { 0.0f, 1.0f, 0.0f });
+	void Draw();
 };
 

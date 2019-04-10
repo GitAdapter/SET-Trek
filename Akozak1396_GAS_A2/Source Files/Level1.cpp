@@ -27,22 +27,25 @@ void Level1::Load()
 	shipPosition.x = rt->GetSize().width / 2 + 1;
 	shipPosition.y = rt->GetSize().height / 2;
 
-	background = new MovableObject(L"Resources\\images\\SectorBackground.bmp", gfx, false, anchor, 1, 1); //This is where we can specify our file system object!
-	background->location = new floatPOINT{ 0.0f, 0.0f };
-	background->anchorPoint = background->location;
+	background = new MovableObject(L"Resources\\images\\bg.jpg", gfx, false, anchor, { 0,0,0 }, 0.05, 0.05); //This is where we can specify our file system object!
+	background->location =  &shipPosition;	
+	*background->anchorPoint = *anchor;
 
 	basePlanet1 = new MovableObject(L"Resources\\images\\Planet1.bmp", gfx, false, anchor); //This is where we can specify our file system object!
 	basePlanet2 = new MovableObject(L"Resources\\images\\Planet2.bmp", gfx, false, anchor); //This is where we can specify our file system object!
 	basePlanet3 = new MovableObject(L"Resources\\images\\Planet3.bmp", gfx, false, anchor); //This is where we can specify our file system object!
 	playerDetails = new MovableObject(L"Resources\\images\\ShipDetail.bmp", gfx, true, playerShip->anchorPoint); //This is where we can specify our file system object!
-	enemyPointer = new MovableObject(L"Resources\\images\\EnemyDirection.bmp", gfx, true, playerShip->anchorPoint, 5, 5); //This is where we can specify our file system object!
-	enemyShip = new MovableObject(L"Resources\\images\\EnemyShip.bmp", gfx, false, anchor);
+	enemyPointer = new MovableObject(L"Resources\\images\\EnemyDirection.bmp", gfx, true, playerShip->anchorPoint, { 0.0f, 1.0f, 0.0f }, 5, 5); //This is where we can specify our file system object!
+	enemyShip = new MovableObject(L"Resources\\images\\EnemyShip.bmp", gfx, false, anchor, { 0.0f, 0.0f, 1.0f });
 
-	explosion1 = new AnimationObject(L"Resources\\images\\explosion1.png", gfx, anchor, 2, 2, 7, 10);
+	explosion1 = new AnimationObject(L"Resources\\images\\explosion1.png", gfx, anchor, 2, 2, 10, 7);
+	shootingStar = new AnimationObject(L"Resources\\images\\ShootingStar.png", gfx, anchor, 2, 2, 1, 23);
+
 	AnimationObject op = new AnimationObject(explosion1);
-	op.location = new floatPOINT{ 50.0f, 50.0f };
-	animations.push_back(op);
 
+	op.location = new floatPOINT{ 50.0f, 50.0f };	
+
+	animations.push_back(op);
 
 	enemyShip->speed = new floatPOINT{ 1.0f, 1.0f };
 	playerShip->speed = new floatPOINT{ 0.0f, 0.0f };
@@ -102,16 +105,21 @@ void Level1::resetBoard()
 	Render();
 }
 
+bool isComplete(const AnimationObject& value) 
+{ 
+	return value.completedAnimation; 
+}
+
 void Level1::Render()
 {
 	D2D1_SIZE_F windowSize = gfx->GetRenderTarget()->GetSize();
 
 	gfx->ClearScreen(0.0f, 0.0f, 0.5f);
-	background->Draw({ 0.0f, 0.0f }, false);
+	background->Draw();
 
-	playerShip->Draw(shipPosition, true, playerShip->angle);
+	playerShip->Draw(shipPosition, false, playerShip->angle);
 	enemyPointer->Draw(shipPosition, true, enemyShip->angle + 180);
-	enemyShip->Draw(*enemyShip->location + shipPosition, true, enemyShip->angle + 180, { 0.0f, 0.0f, 1.0f });
+	enemyShip->Draw(*enemyShip->location + shipPosition, true, enemyShip->angle + 180);
 
 	if (((int)playerShip->location->x % (int)(windowSize.width / 20)) == 0  || ((int)playerShip->location->y % (int)(windowSize.height / 20)) == 0)
 	{		
@@ -157,12 +165,20 @@ void Level1::Render()
 		}
 	}
 
+	if (rand() % 100 == 0)
+	{
+		AnimationObject ss = new AnimationObject(shootingStar);
+		ss.location = new floatPOINT{ (float)(rand() % (int)windowSize.width), (float)(rand() % (int)windowSize.height) };
+		animations.push_back(ss);
+	}
+
 	std::list<int> deleteIndecies;
 
-	for (int i = 0; i < animations.size(); i++)
-	{
-		animations[i].Draw(*animations[i].location + shipPosition, gfx);
+	for (auto i = animations.begin(); i != animations.end(); i++)
+	{		
+		(*i).Draw();
 	}
+	animations.remove_if(isComplete);
 
 	//wchar_t CurrScienceString[40];
 	//swprintf_s(CurrScienceString, L"Total Science: %d", *gfx->Science);

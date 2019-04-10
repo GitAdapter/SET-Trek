@@ -51,7 +51,6 @@ AnimationObject::AnimationObject(const wchar_t* filename, Graphics* gfx, floatPO
 	bmp.clear();	
 	int x = 0, y = 0;
 	D2D1_SIZE_F windowSize = gfx->GetRenderTarget()->GetSize();
-	UINT X, Y;
 
 	//Step 2: Create a Decoder to read file into a WIC Bitmap
 	IWICBitmapDecoder *wicDecoder = NULL;
@@ -62,31 +61,31 @@ AnimationObject::AnimationObject(const wchar_t* filename, Graphics* gfx, floatPO
 		WICDecodeMetadataCacheOnLoad, //Needed, but would only help if we were keeping this in WIC
 		&wicDecoder); //Our pointer to the Decoder we've setup
 
+	//Step 3: Read a 'frame'. We're really just moving the whole image into a frame here
+	IWICBitmapFrameDecode* wicFrame = NULL;
+	hr = wicDecoder->GetFrame(0, &wicFrame); //0 here means the first frame... or only one in our case
+	//Now, we've got a WICBitmap... we want it to be a D2D bitmap
+
+	UINT X, Y;	
+	ID2D1Bitmap *frame = NULL;
+	IWICBitmapFrameDecode *f = NULL;
+	f = wicFrame;
+
+	wicFrame->GetSize(&X, &Y);
+	int frameWidth = X / frameRows, frameHeight = Y / frameColumns;
+
 	while (y < frameColumns)
 	{
 		while (x < frameRows)
 		{
-
-			//Step 3: Read a 'frame'. We're really just moving the whole image into a frame here
-			IWICBitmapFrameDecode* wicFrame = NULL;
-			hr = wicDecoder->GetFrame(0, &wicFrame); //0 here means the first frame... or only one in our case
-			//Now, we've got a WICBitmap... we want it to be a D2D bitmap
-
-			IWICBitmapClipper *wicClipper = NULL;
-			hr = wicFactory->CreateBitmapClipper(&wicClipper);
-
-			IWICBitmapScaler *wicScaler = NULL;
-			hr = wicFactory->CreateBitmapScaler(&wicScaler);
-
 			//Step 4: Create a WIC Converter
 			IWICFormatConverter *wicConverter = NULL;
 			hr = wicFactory->CreateFormatConverter(&wicConverter);
 
-			ID2D1Bitmap *frame = NULL;
-			IWICBitmapFrameDecode *f = NULL;
-			f = wicFrame;
+			IWICBitmapClipper *wicClipper = NULL;
+			hr = wicFactory->CreateBitmapClipper(&wicClipper);
 
-			WICRect destRect = { x * 100, y * 100, 100, 100 };
+			WICRect destRect = { x * frameWidth, y * frameHeight, frameWidth, frameHeight };
 			wicClipper->Initialize(f, &destRect);
 
 			//Step 5: Configure the Converter
@@ -106,16 +105,18 @@ AnimationObject::AnimationObject(const wchar_t* filename, Graphics* gfx, floatPO
 				&frame //Our destination bmp we specified earlier in the header
 			);
 
-			bmp.push_back(frame);
+			if (frame != nullptr)
+			{
+				bmp.push_back(frame);
+			}			
 			x++;
+			if (wicClipper) wicClipper->Release();			
 			if (wicConverter) wicConverter->Release();
-			if (wicFrame) wicFrame->Release();
-			if (wicScaler) wicScaler->Release();
-			if (wicClipper) wicClipper->Release();
 		}
 		y++;
 		x = 0;
 	}	
+	if (wicFrame) wicFrame->Release();
 	if (wicDecoder) wicDecoder->Release();
 	//Let us do some private object cleanup!
 	if (wicFactory) wicFactory->Release();
@@ -153,18 +154,19 @@ void AnimationObject::getShipSpeed(floatPOINT start, floatPOINT end, floatPOINT 
 	}
 }
 
-void AnimationObject::Draw(floatPOINT drawloc, bool shouldChroma, float rotation, D2D1_VECTOR_3F vector)
+#define FRAMES_PER_SECOND 2
+
+void AnimationObject::Draw()
 {
-
-	floatPOINT location;
-	location.x = drawloc.x - anchorPoint->x;
-	location.y = drawloc.y - anchorPoint->y;
-
-	if (currentFrame >= bmp.size())
+	currentFrame++;
+	if (currentFrame / FRAMES_PER_SECOND >= bmp.size())
 	{
-		currentFrame = 0;
+		completedAnimation = true;		
 	}
-	ID2D1Bitmap* bit = bmp[int(currentFrame++ / 3)];
-	D2D1_SIZE_F sz = bit->GetSize();
-	gfx->GetDeviceContext()->DrawImage(bit, D2D1::Point2F(location.x - bit->GetSize().width / 2, location.y - bit->GetSize().height / 2));
+	else
+	{
+		ID2D1Bitmap* bit = bmp[int(currentFrame / FRAMES_PER_SECOND)];
+		D2D1_SIZE_F sz = bit->GetSize();
+		gfx->GetDeviceContext()->DrawImage(bit, D2D1::Point2F(location->x - bit->GetSize().width / 2, location->y - bit->GetSize().height / 2));
+	}
 }

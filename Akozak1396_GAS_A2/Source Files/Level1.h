@@ -25,10 +25,11 @@ class Level1 : public GameLevel
 	MovableObject* enemyShip;
 
 	AnimationObject* explosion1;
+	AnimationObject* shootingStar;
 
 	std::vector<Planet> currSprites;
 	std::vector<Planet> onScreenPlanets;
-	std::vector<AnimationObject> animations;
+	std::list<AnimationObject> animations;
 
 public:
 	void Load() override;

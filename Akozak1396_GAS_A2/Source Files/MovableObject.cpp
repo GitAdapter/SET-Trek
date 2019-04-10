@@ -61,7 +61,7 @@ MovableObject::MovableObject(MovableObject *m)
 	*bmp = *(m->bmp);
 }
 
-MovableObject::MovableObject(const wchar_t* filename, Graphics* gfx, bool isS, floatPOINT *anchor, int numRows, int numColumns)
+MovableObject::MovableObject(const wchar_t* filename, Graphics* gfx, bool isS, floatPOINT *anchor, D2D1_VECTOR_3F chroma, int numRows, int numColumns)
 {	
 	this->gfx = gfx; //save the gfx parameter for later
 	bmp = NULL; //This needs to be NULL to start off
@@ -95,45 +95,62 @@ MovableObject::MovableObject(const wchar_t* filename, Graphics* gfx, bool isS, f
 	IWICBitmapScaler *wicScaler = NULL;
 	hr = wicFactory->CreateBitmapScaler(&wicScaler);
 	
-	D2D1_SIZE_F windowSize = gfx->GetRenderTarget()->GetSize();
-	UINT X, Y;
-	wicFrame->GetSize(&X, &Y);
-
-	
-	double a = (double)(windowSize.width / numRows) / X;
-	double b = (double)(windowSize.height / numColumns) / Y;
-
-	double scalingFactor = min(a, b);
-
-	if (numColumns * numRows == 1) scalingFactor = max(a, b);
-
-	if (SUCCEEDED(hr))
+	if (numColumns * numRows != 0)
 	{
-		hr = wicScaler->Initialize(
-			wicFrame,
-			X*scalingFactor,
-			Y*scalingFactor,
-			WICBitmapInterpolationModeFant
-		);
-	}
+		D2D1_SIZE_F windowSize = gfx->GetRenderTarget()->GetSize();
+		UINT X, Y;
+		wicFrame->GetSize(&X, &Y);
 
-	width = X * scalingFactor;
-	height = Y * scalingFactor;
+
+		double a = (double)(windowSize.width / numRows) / X;
+		double b = (double)(windowSize.height / numColumns) / Y;
+
+		double scalingFactor = min(a, b);
+
+		if (numColumns * numRows == 1) scalingFactor = max(a, b);
+
+		if (SUCCEEDED(hr))
+		{
+			hr = wicScaler->Initialize(
+				wicFrame,
+				X*scalingFactor,
+				Y*scalingFactor,
+				WICBitmapInterpolationModeFant
+			);
+		}
+		width = X * scalingFactor;
+		height = Y * scalingFactor;
+	}
 
 
 //Step 4: Create a WIC Converter
 	IWICFormatConverter *wicConverter = NULL;
 	hr = wicFactory->CreateFormatConverter(&wicConverter);
 
-//Step 5: Configure the Converter
-	hr = wicConverter->Initialize(
-		wicScaler, //Our frame from above
-		GUID_WICPixelFormat32bppPBGRA, //Pixelformat
-		WICBitmapDitherTypeNone, //not important for us here
-		NULL, //indicates no palette is needed, not important here
-		0.0, //Alpha Transparency, can look at this later
-		WICBitmapPaletteTypeCustom //Not important for us here
+	if (numColumns * numRows == 0)
+	{
+		//Step 5: Configure the Converter
+		hr = wicConverter->Initialize(
+			wicFrame, //Our frame from above
+			GUID_WICPixelFormat32bppPBGRA, //Pixelformat
+			WICBitmapDitherTypeNone, //not important for us here
+			NULL, //indicates no palette is needed, not important here
+			0.0, //Alpha Transparency, can look at this later
+			WICBitmapPaletteTypeCustom //Not important for us here
+			);
+	}
+	else
+	{
+		//Step 5: Configure the Converter
+		hr = wicConverter->Initialize(
+			wicScaler, //Our frame from above
+			GUID_WICPixelFormat32bppPBGRA, //Pixelformat
+			WICBitmapDitherTypeNone, //not important for us here
+			NULL, //indicates no palette is needed, not important here
+			0.0, //Alpha Transparency, can look at this later
+			WICBitmapPaletteTypeCustom //Not important for us here
 		);
+	}
 
 //Step 6: Create the D2D Bitmap! Finally!
 	gfx->GetRenderTarget()->CreateBitmapFromWicBitmap(
@@ -141,7 +158,16 @@ MovableObject::MovableObject(const wchar_t* filename, Graphics* gfx, bool isS, f
 		NULL, //Can specify D2D1_Bitmap_Properties here, not needed now
 		&bmp //Our destination bmp we specified earlier in the header
 	);
-	
+
+
+	chromakeyEffect = NULL;
+	gfx->GetDeviceContext()->CreateEffect(CLSID_D2D1ChromaKey, &chromakeyEffect);
+	chromakeyEffect->SetInput(0, bmp);
+	chromakeyEffect->SetValue(D2D1_CHROMAKEY_PROP_COLOR, chroma);
+	chromakeyEffect->SetValue(D2D1_CHROMAKEY_PROP_TOLERANCE, 0.8f);
+	chromakeyEffect->SetValue(D2D1_CHROMAKEY_PROP_INVERT_ALPHA, false);
+	chromakeyEffect->SetValue(D2D1_CHROMAKEY_PROP_FEATHER, false);
+
 	//Let us do some private object cleanup!
 	if (wicFactory) wicFactory->Release();
 	if (wicDecoder) wicDecoder->Release();
@@ -214,42 +240,24 @@ void MovableObject::getShipSpeed(floatPOINT start, floatPOINT end, floatPOINT *s
 	}
 }
 
-void MovableObject::Draw(floatPOINT drawloc, bool shouldChroma, float rotation, D2D1_VECTOR_3F vector)
+void MovableObject::Draw()
 {
+	gfx->GetDeviceContext()->DrawImage(bmp, D2D1::Point2F(location->x - bmp->GetSize().width / 2, location->y - bmp->GetSize().height / 2));
+}
 
+void MovableObject::Draw(floatPOINT drawloc, bool shouldChroma, float rotation)
+{
 	floatPOINT location;
 	location.x = drawloc.x - anchorPoint->x;
 	location.y = drawloc.y - anchorPoint->y;
+	gfx->GetDeviceContext()->SetTransform(D2D1::Matrix3x2F::Rotation(rotation, D2D1::Point2F(location.x, location.y)));
 	if (shouldChroma) 
 	{
-		ID2D1Effect *chromakeyEffect = NULL;
-	
-		//D2D1_VECTOR_3F vector{ 0.0f, 1.0f, 0.0f };
-		gfx->GetDeviceContext()->CreateEffect(CLSID_D2D1ChromaKey, &chromakeyEffect);
-
-		chromakeyEffect->SetInput(0, bmp);
-		chromakeyEffect->SetValue(D2D1_CHROMAKEY_PROP_COLOR, vector);
-		chromakeyEffect->SetValue(D2D1_CHROMAKEY_PROP_TOLERANCE, 0.8f);
-		chromakeyEffect->SetValue(D2D1_CHROMAKEY_PROP_INVERT_ALPHA, false);
-		chromakeyEffect->SetValue(D2D1_CHROMAKEY_PROP_FEATHER, false);
-	
-		gfx->GetDeviceContext()->SetTransform(D2D1::Matrix3x2F::Rotation(rotation, D2D1::Point2F(location.x, location.y)));
 		gfx->GetDeviceContext()->DrawImage(chromakeyEffect, D2D1::Point2F(location.x - bmp->GetSize().width / 2, location.y - bmp->GetSize().height / 2));
-		gfx->GetDeviceContext()->SetTransform(D2D1::Matrix3x2F::Rotation(0, D2D1::Point2F(location.x, location.y)));
-
-		if (chromakeyEffect) chromakeyEffect->Release();
 	}
 	else
 	{
-		gfx->GetRenderTarget()->DrawBitmap(
-			bmp, //Bitmap we built from WIC
-			D2D1::RectF(location.x, location.y,
-				bmp->GetSize().width, bmp->GetSize().height), //Destination rectangle
-			0.8f, //Opacity or Alpha
-			D2D1_BITMAP_INTERPOLATION_MODE::D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR,
-			//Above - the interpolation mode to use if this object is 'stretched' or 'shrunk'. 
-			//Refer back to lecture notes on image/bitmap files
-			D2D1::RectF(location.x, location.y, bmp->GetSize().width, bmp->GetSize().height) //Source Rect
-		);
+		gfx->GetDeviceContext()->DrawImage(bmp, D2D1::Point2F(location.x - bmp->GetSize().width / 2, location.y - bmp->GetSize().height / 2));
 	}
+	gfx->GetDeviceContext()->SetTransform(D2D1::Matrix3x2F::Rotation(0, D2D1::Point2F(location.x, location.y)));
 }
