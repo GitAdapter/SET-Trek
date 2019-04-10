@@ -23,11 +23,14 @@ MovableObject::MovableObject(MovableObject *m)
 	height = m->height;
 	angle = m->angle;
 
+	*speed = floatPOINT { 0.0f, 0.0f };
+
 	*anchorPoint = *(m->anchorPoint);
 	*desintation = *(m->desintation);
 	*location = *(m->location);
 
 	*bmp = *(m->bmp);
+	*chromakeyEffect = *(m->chromakeyEffect);
 }
 
 MovableObject::MovableObject(const wchar_t* filename, Graphics* gfx, bool isS, floatPOINT *anchor, D2D1_VECTOR_3F chroma, int numRows, int numColumns)
@@ -36,7 +39,11 @@ MovableObject::MovableObject(const wchar_t* filename, Graphics* gfx, bool isS, f
 	bmp = NULL; //This needs to be NULL to start off
 	HRESULT hr;
 
+	floatPOINT zeroFP = floatPOINT{ 0.0f, 0.0f };
+
 	anchorPoint = anchor;
+	angle = 0;
+	speed = &zeroFP;
 
 	//Step 1: Create a WIC Factory
 	IWICImagingFactory *wicFactory = NULL;
@@ -182,7 +189,7 @@ float getShipAngle(floatPOINT start, floatPOINT end)
 	else
 		theta_radians = 2 * M_PI - theta_radians;
 
-	return -((theta_radians * 180) / M_PI) + 180;
+	return -((180.0f * theta_radians) / M_PI) + 180;
 }
 
 void MovableObject::getShipSpeed(floatPOINT start, floatPOINT end, floatPOINT *speed, bool isEnemy)

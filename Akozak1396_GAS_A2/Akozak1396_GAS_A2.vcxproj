@@ -118,14 +118,46 @@
     <Text Include="Resources\planetNames.txt" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="Resources\images\1.png" />
+    <Image Include="Resources\images\bg.jpg" />
+    <Image Include="Resources\images\boxes.png" />
+    <Image Include="Resources\images\chicken.png" />
     <Image Include="Resources\images\EnemyDirection.bmp" />
     <Image Include="Resources\images\EnemyShip.bmp" />
+    <Image Include="Resources\images\exhaust.png" />
+    <Image Include="Resources\images\explosion1.png" />
+    <Image Include="Resources\images\explosion2.png" />
+    <Image Include="Resources\images\explosion3.png" />
+    <Image Include="Resources\images\explosion4.png" />
+    <Image Include="Resources\images\explosion5.png" />
+    <Image Include="Resources\images\flame.png" />
+    <Image Include="Resources\images\flame1.png" />
+    <Image Include="Resources\images\lazerhit.png" />
+    <Image Include="Resources\images\magic.png" />
+    <Image Include="Resources\images\magic2.png" />
+    <Image Include="Resources\images\magic3.png" />
+    <Image Include="Resources\images\p1.png" />
+    <Image Include="Resources\images\p10.png" />
+    <Image Include="Resources\images\p2.png" />
+    <Image Include="Resources\images\p3.png" />
+    <Image Include="Resources\images\p4.png" />
+    <Image Include="Resources\images\p5.png" />
+    <Image Include="Resources\images\p6.png" />
+    <Image Include="Resources\images\p7.png" />
+    <Image Include="Resources\images\p8.png" />
+    <Image Include="Resources\images\p9.png" />
     <Image Include="Resources\images\Planet1.bmp" />
     <Image Include="Resources\images\Planet2.bmp" />
     <Image Include="Resources\images\Planet3.bmp" />
+    <Image Include="Resources\images\playerShip.png" />
     <Image Include="Resources\images\SectorBackground.bmp" />
     <Image Include="Resources\images\ShipBase.bmp" />
     <Image Include="Resources\images\ShipDetail.bmp" />
+    <Image Include="Resources\images\ShootingStar.png" />
+    <Image Include="Resources\images\spinningGlobe1.png" />
+    <Image Include="Resources\images\spinningGlobe2.png" />
+    <Image Include="Resources\images\spinningGlobe3.png" />
+    <Image Include="Resources\images\spinningGlobe4.png" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source Files\AnimationObject.h" />
@@ -152,6 +184,9 @@
     <ClCompile Include="Source Files\PlanetObject.cpp" />
     <ClCompile Include="Source Files\PlanetWindow.cpp" />
     <ClCompile Include="Source Files\VisibleObject.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="Resources\images\Shooting Stars.wav" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

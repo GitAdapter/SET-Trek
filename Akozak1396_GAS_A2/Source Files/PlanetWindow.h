@@ -12,6 +12,8 @@ public:
 
 	floatPOINT *holdingDestination;
 
+	void* planetAnimation = nullptr;
+
 	bool visited = false;
 
 	int getScience() { return science; }

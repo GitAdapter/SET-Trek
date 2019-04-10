@@ -19,6 +19,7 @@ class Level1 : public GameLevel
 	std::vector<AnimationObject*> planets;
 	std::vector<AnimationObject*> explosions;
 	std::vector<AnimationObject*> randomEnvironment;
+	std::vector<AnimationObject*> globes;
 
 	AnimationObject* boxes;
 	AnimationObject* shootingStar;

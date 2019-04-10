@@ -13,11 +13,6 @@ any bitmap from disk/resources into the game and use it
 within Directx (D2D specifically for now)
 
 *******************************************************/
-AnimationObject::AnimationObject()
-{
-
-}
-
 AnimationObject::AnimationObject(AnimationObject *m)
 {
 	gfx = m->gfx;
@@ -31,11 +26,13 @@ AnimationObject::AnimationObject(AnimationObject *m)
 	bmp = m->bmp;
 }
 
-AnimationObject::AnimationObject(const wchar_t* filename, Graphics* gfx, floatPOINT *anchor, int numRows, int numColumns, int frameRows, int frameColumns, int framesPerRender)
+AnimationObject::AnimationObject(const wchar_t* filename, Graphics* gfx, floatPOINT *anchor, int numRows, int numColumns, int frameRows, int frameColumns, int framesPerRender, int repeat)
 {
 	frameSpeed = framesPerRender;
 	this->gfx = gfx; //save the gfx parameter for later
 	HRESULT hr;
+
+	repeatTimes = repeat;
 
 	anchorPoint = anchor;
 
@@ -73,7 +70,6 @@ AnimationObject::AnimationObject(const wchar_t* filename, Graphics* gfx, floatPO
 	{
 		UINT X, Y;
 		wicFrame->GetSize(&X, &Y);
-
 
 		double a = ((double)(windowSize.width / numRows) / X) * frameColumns;
 		double b = ((double)(windowSize.height / numColumns) / Y) * frameRows;

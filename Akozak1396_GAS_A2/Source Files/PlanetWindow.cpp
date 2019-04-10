@@ -1,4 +1,5 @@
 #include "PlanetWindow.h"
+#include "PlanetObject.h"
 #include "GameController.h"
 
 void PlanetWindow::Load()
@@ -8,12 +9,19 @@ void PlanetWindow::Load()
 
 	gfx->destination = new floatPOINT{ 0.0f, 0.0f };
 
+	D2D1_SIZE_F windowSize = gfx->GetRenderTarget()->GetSize();
+
 	if (energy == -1)
 	{
 		energy = (rand() % 300) + 1;
 		science = (rand() % 300) + 1;
 		std::string pn = gfx->planetNames.at(rand() % gfx->planetNames.size());
 		planetName = std::wstring(pn.begin(), pn.end());
+	}
+
+	if (planetAnimation)
+	{
+		*((PlanetObject*)planetAnimation)->location = floatPOINT{ windowSize.width / 2, windowSize.height / 2 + 70.0f };
 	}
 }
 
@@ -70,7 +78,10 @@ void PlanetWindow::Render()
 	gfx->DrawScreenText(L"2. Gather Science", 0, size.height - 150, size.width, 75, D2D1::ColorF::WhiteSmoke, 28);
 	gfx->DrawScreenText(L"3. Leave Orbit", 0, size.height - 75, size.width, 75, D2D1::ColorF::WhiteSmoke, 28);
 
-
+	if (planetAnimation)
+	{		
+		((PlanetObject*)planetAnimation)->Draw();
+	}
 
 	if (gfx->destination->y > size.height - 225)
 	{
@@ -88,6 +99,7 @@ void PlanetWindow::Render()
 		else
 		{
 			gfx->destination->x = -1;
+			visited = true;
 			GameController::ClosePopUp();
 		}
 	}

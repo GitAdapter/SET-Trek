@@ -9,9 +9,9 @@ public:
 	//Constructor
 	AnimationObject();
 	AnimationObject(AnimationObject *m);
-	AnimationObject(const wchar_t* filename, Graphics* gfx, floatPOINT*, int numRows, int numColumns, int frameRows, int frameColumns, int framesPerRender = 1);
+	AnimationObject(const wchar_t* filename, Graphics* gfx, floatPOINT*, int numRows, int numColumns, int frameRows, int frameColumns, int framesPerRender = 1, int repeat = 1);
 
-	int currentFrame = 0, frameSpeed, numFrames;
+	int currentFrame = 0, frameSpeed;
 	int repeatTimes = 1, currTimes = 0;
 	bool completedAnimation = false;
 
