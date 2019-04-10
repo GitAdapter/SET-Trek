@@ -17,37 +17,6 @@ void changeIndiv(float *, float, float);
 bool isTouching(MovableObject*);
 float getShipAngle(floatPOINT start, floatPOINT end);
 
-bool MovableObject::isTouching(MovableObject *planet)
-{
-	bool isTouch = false;
-	MovableObject *ship = this;
-
-	int sRad = ship->width / 3;
-	int pRad = planet->width / 3;
-
-	POINT sCenter;
-	sCenter.x = (ship->width / 2) + ship->location->x;
-	sCenter.y = (ship->height / 2) + ship->location->y;
-
-	POINT pCenter;
-	pCenter.x = (planet->width / 2) + planet->location->x;
-	pCenter.y = (planet->width / 2) + planet->location->y;
-
-	double distance = sqrt(SQUARE(pCenter.x - sCenter.x) + SQUARE(pCenter.y - sCenter.y));
-
-	if (distance <= sRad + pRad)
-	{
-		isTouch = true;
-	}
-
-	return isTouch;
-}
-
-MovableObject::MovableObject()
-{
-
-}
-
 MovableObject::MovableObject(MovableObject *m)
 {
 	width = m->width;

@@ -23,17 +23,17 @@ AnimationObject::AnimationObject(AnimationObject *m)
 	gfx = m->gfx;
 	width = m->width;
 	height = m->height;
-	angle = m->angle;
+	frameSpeed = m->frameSpeed;
 
 	*anchorPoint = *(m->anchorPoint);
-	*desintation = *(m->desintation);
 	*location = *(m->location);
 
 	bmp = m->bmp;
 }
 
-AnimationObject::AnimationObject(const wchar_t* filename, Graphics* gfx, floatPOINT *anchor, int numRows, int numColumns, int frameRows, int frameColumns)
+AnimationObject::AnimationObject(const wchar_t* filename, Graphics* gfx, floatPOINT *anchor, int numRows, int numColumns, int frameRows, int frameColumns, int framesPerRender)
 {
+	frameSpeed = framesPerRender;
 	this->gfx = gfx; //save the gfx parameter for later
 	HRESULT hr;
 
@@ -66,12 +66,43 @@ AnimationObject::AnimationObject(const wchar_t* filename, Graphics* gfx, floatPO
 	hr = wicDecoder->GetFrame(0, &wicFrame); //0 here means the first frame... or only one in our case
 	//Now, we've got a WICBitmap... we want it to be a D2D bitmap
 
+	IWICBitmapScaler *wicScaler = NULL;
+	hr = wicFactory->CreateBitmapScaler(&wicScaler);
+
+	if (numColumns * numRows != 0)
+	{
+		UINT X, Y;
+		wicFrame->GetSize(&X, &Y);
+
+
+		double a = ((double)(windowSize.width / numRows) / X) * frameColumns;
+		double b = ((double)(windowSize.height / numColumns) / Y) * frameRows;
+
+		double scalingFactor = min(a, b);
+
+		if (numColumns * numRows == 1) scalingFactor = max(a, b);
+
+		if (SUCCEEDED(hr))
+		{
+			hr = wicScaler->Initialize(
+				wicFrame,
+				X*scalingFactor,
+				Y*scalingFactor,
+				WICBitmapInterpolationModeFant
+			);
+		}
+		width = X * scalingFactor / frameColumns;
+		height = Y * scalingFactor / frameRows;
+	}
+
 	UINT X, Y;	
 	ID2D1Bitmap *frame = NULL;
-	IWICBitmapFrameDecode *f = NULL;
+	IWICBitmapSource *f = NULL;
 	f = wicFrame;
 
-	wicFrame->GetSize(&X, &Y);
+	if (numColumns * numRows != 0) { f = wicScaler; }
+
+	f->GetSize(&X, &Y);
 	int frameWidth = X / frameRows, frameHeight = Y / frameColumns;
 
 	while (y < frameColumns)
@@ -130,43 +161,56 @@ AnimationObject::~AnimationObject()
 	}*/
 }
 
-void AnimationObject::getShipSpeed(floatPOINT start, floatPOINT end, floatPOINT *speed, bool isEnemy)
-{
-	float ax = start.x, ay = start.y, bx = end.x, by = end.y;
-	float deltaX = abs(ax - bx);
-	float deltaY = abs(ay - by);
-
-	if (deltaX > 0.1f || deltaY > 0.1f)
-	{
-		float bss = baseShipSpeed;
-		double distance = sqrt(SQUARE(ax - bx) + SQUARE(ay - by));
-		if (isEnemy && distance < gfx->GetRenderTarget()->GetSize().width / 5)
-		{
-			bss *= 1.1f;
-		}
-		speed->x = (bss / (deltaX + deltaY)) * deltaX;
-		speed->y = (bss / (deltaX + deltaY)) * deltaY;
-
-		// Correcting for rounding errors
-		float diff = bss - sqrtf(pow(speed->y, 2) + pow(speed->x, 2));
-		speed->x += diff / 2;
-		speed->y += diff / 2;
-	}
-}
-
-#define FRAMES_PER_SECOND 2
-
 void AnimationObject::Draw()
 {
 	currentFrame++;
-	if (currentFrame / FRAMES_PER_SECOND >= bmp.size())
+	if (currentFrame / frameSpeed >= bmp.size())
 	{
-		completedAnimation = true;		
+		if (repeatTimes == ++currTimes)
+		{
+			completedAnimation = true;
+		}
+		else
+		{
+			currentFrame = 0;
+		}
 	}
-	else
+
+	if (!completedAnimation)
 	{
-		ID2D1Bitmap* bit = bmp[int(currentFrame / FRAMES_PER_SECOND)];
+		ID2D1Bitmap* bit = bmp[int(currentFrame / frameSpeed)];
 		D2D1_SIZE_F sz = bit->GetSize();
 		gfx->GetDeviceContext()->DrawImage(bit, D2D1::Point2F(location->x - bit->GetSize().width / 2, location->y - bit->GetSize().height / 2));
 	}
+}
+
+floatPOINT AnimationObject::Draw(floatPOINT drawloc)
+{
+	floatPOINT finalLoc = *location + floatPOINT{ - anchorPoint->x + drawloc.x, - anchorPoint->y + drawloc.y };
+	D2D1_SIZE_F imgSize = bmp[0]->GetSize();
+	//finalLoc.x = finalLoc.x - imgSize.width / 2;
+	//finalLoc.y = finalLoc.y - imgSize.height / 2;
+	//finalLoc.x = location->x + anchorPoint;
+	//finalLoc.y = drawloc.y + location->y;
+
+	currentFrame++;
+	if (currentFrame / frameSpeed >= bmp.size())
+	{
+		if (repeatTimes == ++currTimes)
+		{
+			completedAnimation = true;
+		}
+		else
+		{
+			currentFrame = 0;
+		}
+	}
+
+	if (!completedAnimation)
+	{
+		ID2D1Bitmap* bit = bmp[int(currentFrame / frameSpeed)];
+		D2D1_SIZE_F sz = bit->GetSize();
+		gfx->GetDeviceContext()->DrawImage(bit, D2D1::Point2F(finalLoc.x, finalLoc.y));
+	}
+	return finalLoc;
 }

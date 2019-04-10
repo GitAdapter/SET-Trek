@@ -3,7 +3,7 @@
 #include "Level1.h"
 #include "GameOver.h"
 
-#define UNIVERSE_WIDTH 100
+#define UNIVERSE_WIDTH 10
 #define UNIVERSE_HEIGHT UNIVERSE_WIDTH
 #define CHANCE_OF_PLANET 25
 #define ENEMY_DISTANCE 500
@@ -31,19 +31,38 @@ void Level1::Load()
 	background->location =  &shipPosition;	
 	*background->anchorPoint = *anchor;
 
-	basePlanet1 = new MovableObject(L"Resources\\images\\Planet1.bmp", gfx, false, anchor); //This is where we can specify our file system object!
-	basePlanet2 = new MovableObject(L"Resources\\images\\Planet2.bmp", gfx, false, anchor); //This is where we can specify our file system object!
-	basePlanet3 = new MovableObject(L"Resources\\images\\Planet3.bmp", gfx, false, anchor); //This is where we can specify our file system object!
+	planets.push_back(new AnimationObject(L"Resources\\images\\p1.png", gfx, anchor, 10, 10, 4, 4, 5));
+	planets.push_back(new AnimationObject(L"Resources\\images\\p2.png", gfx, anchor, 10, 10, 4, 4, 5));
+	planets.push_back(new AnimationObject(L"Resources\\images\\p3.png", gfx, anchor, 10, 10, 4, 4, 5));
+	planets.push_back(new AnimationObject(L"Resources\\images\\p4.png", gfx, anchor, 10, 10, 4, 4, 5));
+	planets.push_back(new AnimationObject(L"Resources\\images\\p5.png", gfx, anchor, 10, 10, 4, 4, 5));
+	planets.push_back(new AnimationObject(L"Resources\\images\\p6.png", gfx, anchor, 10, 10, 4, 4, 5));
+	planets.push_back(new AnimationObject(L"Resources\\images\\p7.png", gfx, anchor, 10, 10, 4, 4, 5));
+	planets.push_back(new AnimationObject(L"Resources\\images\\p8.png", gfx, anchor, 10, 10, 4, 4, 5));
+	planets.push_back(new AnimationObject(L"Resources\\images\\p9.png", gfx, anchor, 10, 10, 4, 4, 5));
+	planets.push_back(new AnimationObject(L"Resources\\images\\p10.png", gfx, anchor, 10, 10, 4, 4, 5));
+
 	playerDetails = new MovableObject(L"Resources\\images\\ShipDetail.bmp", gfx, true, playerShip->anchorPoint); //This is where we can specify our file system object!
 	enemyPointer = new MovableObject(L"Resources\\images\\EnemyDirection.bmp", gfx, true, playerShip->anchorPoint, { 0.0f, 1.0f, 0.0f }, 5, 5); //This is where we can specify our file system object!
 	enemyShip = new MovableObject(L"Resources\\images\\EnemyShip.bmp", gfx, false, anchor, { 0.0f, 0.0f, 1.0f });
 
-	explosion1 = new AnimationObject(L"Resources\\images\\explosion1.png", gfx, anchor, 2, 2, 10, 7);
-	shootingStar = new AnimationObject(L"Resources\\images\\ShootingStar.png", gfx, anchor, 2, 2, 1, 23);
+	explosions.push_back(new AnimationObject(L"Resources\\images\\explosion1.png", gfx, anchor, 0, 0, 10, 7, 2));
+	explosions.push_back(new AnimationObject(L"Resources\\images\\explosion2.png", gfx, anchor, 0, 0, 10, 8, 2));
+	explosions.push_back(new AnimationObject(L"Resources\\images\\explosion3.png", gfx, anchor, 0, 0, 10, 9, 2));
+	explosions.push_back(new AnimationObject(L"Resources\\images\\explosion4.png", gfx, anchor, 0, 0, 10, 8, 2));
+	explosions.push_back(new AnimationObject(L"Resources\\images\\explosion5.png", gfx, anchor, 0, 0, 10, 7, 2));
 
-	AnimationObject op = new AnimationObject(explosion1);
+	randomEnvironment.push_back(new AnimationObject(L"Resources\\images\\ShootingStar.png", gfx, anchor, 0, 0, 1, 23, 2));
+	randomEnvironment.push_back(new AnimationObject(L"Resources\\images\\magic.png", gfx, anchor, 0, 0, 7, 7, 2));
+	randomEnvironment.push_back(new AnimationObject(L"Resources\\images\\magic2.png", gfx, anchor, 0, 0, 9, 9, 2));
+	randomEnvironment.push_back(new AnimationObject(L"Resources\\images\\magic3.png", gfx, anchor, 0, 0, 9, 9, 2));
+	//boxes = new AnimationObject(L"Resources\\images\\boxes.png", gfx, anchor, 2, 2, 6, 1, 8);
+	//boxes = new AnimationObject(L"Resources\\images\\flame1.png", gfx, anchor, 2, 2, 3, 3, 3);
+	boxes = new AnimationObject(L"Resources\\images\\chicken.png", gfx, anchor, 2, 2, 1, 41, 8);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
 
-	op.location = new floatPOINT{ 50.0f, 50.0f };	
+	AnimationObject op = new AnimationObject(explosions[rand()%5]);
+	op.repeatTimes = -1;
+	op.location = new floatPOINT{ 150.0f, 150.0f };	
 
 	animations.push_back(op);
 
@@ -82,6 +101,7 @@ void Level1::Update()
 
 void Level1::resetBoard()
 {
+	animations.clear();
 	repopSector();
 	ID2D1RenderTarget *rt = gfx->GetRenderTarget();
 	delete(playerShip->location);
@@ -117,80 +137,99 @@ void Level1::Render()
 	gfx->ClearScreen(0.0f, 0.0f, 0.5f);
 	background->Draw();
 
-	playerShip->Draw(shipPosition, false, playerShip->angle);
-	enemyPointer->Draw(shipPosition, true, enemyShip->angle + 180);
-	enemyShip->Draw(*enemyShip->location + shipPosition, true, enemyShip->angle + 180);
-
-	if (((int)playerShip->location->x % (int)(windowSize.width / 20)) == 0  || ((int)playerShip->location->y % (int)(windowSize.height / 20)) == 0)
-	{		
-		float xMAX = playerShip->location->x + (windowSize.width * 1.5) - shipPosition.x;
-		float xMIN = playerShip->location->x - shipPosition.x - 500;
-		float yMAX = playerShip->location->y + (windowSize.height * 1.5) - shipPosition.y;
-		float yMIN = playerShip->location->y - shipPosition.y - 500;
-		
-		onScreenPlanets.clear();
-
-		for (auto i = currSprites.begin(); i != currSprites.end(); i++)
-		{
-			Planet s = *i;
-			float x = i->obj->location->x, y = i->obj->location->y;
-			if (x > xMIN && x < xMAX && y > yMIN && y < yMAX)
-			{
-				onScreenPlanets.push_back(s);
-				if (s.obj->planetWindow == nullptr)
-				{
-					s.obj->planetWindow = new PlanetWindow();
-				}
-			}
-		}
-	}
-
-	for (auto i = onScreenPlanets.begin(); i != onScreenPlanets.end(); i++)
-	{
-		Planet s = *i;
-		s.obj->Draw(*s.obj->location + shipPosition, true, s.obj->angle);
-		
-		if (playerShip->isTouching(s.obj))
-		{
-			if (!s.obj->planetWindow->visited)
-			{
-				s.obj->planetWindow->visited = true;
-				GameController::OpenPopUp(s.obj->planetWindow);
-			}
-			break;
-		}
-		else
-		{
-			s.obj->planetWindow->visited = false;
-		}
-	}
-
 	if (rand() % 100 == 0)
 	{
-		AnimationObject ss = new AnimationObject(shootingStar);
-		ss.location = new floatPOINT{ (float)(rand() % (int)windowSize.width), (float)(rand() % (int)windowSize.height) };
+		AnimationObject ss = new AnimationObject(randomEnvironment[rand() % randomEnvironment.size()]);
+		ss.location = new floatPOINT{ playerShip->location->x - (float)(rand() % (int)windowSize.width - (int)windowSize.width),
+			playerShip->location->y - (float)(rand() % (int)windowSize.height - (int)windowSize.height) };
+		ss.anchorPoint = anchor;
 		animations.push_back(ss);
 	}
 
 	std::list<int> deleteIndecies;
 
 	for (auto i = animations.begin(); i != animations.end(); i++)
-	{		
-		(*i).Draw();
+	{
+		(*i).Draw(*playerShip->location);
 	}
 	animations.remove_if(isComplete);
 
-	//wchar_t CurrScienceString[40];
-	//swprintf_s(CurrScienceString, L"Total Science: %d", *gfx->Science);
+	playerShip->Draw(shipPosition, false, playerShip->angle);
+	enemyPointer->Draw(shipPosition, true, enemyShip->angle + 180);
+	enemyShip->Draw(*enemyShip->location + shipPosition, true, enemyShip->angle + 180);
 
-	//wchar_t CurrEnergyString[40];
-	//swprintf_s(CurrEnergyString, L"Total Energy: %d", *gfx->Energy);
+	if (((int)playerShip->location->x % (int)(windowSize.width / 20)) == 0  || ((int)playerShip->location->y % (int)(windowSize.height / 20)) == 0)
+	{		
+		float xMAX = playerShip->location->x + (windowSize.width * 2);
+		float xMIN = playerShip->location->x - (windowSize.width * 2);
+		float yMAX = playerShip->location->y + (windowSize.height * 2);
+		float yMIN = playerShip->location->y - (windowSize.height * 2);
+		
+		onScreenPlanets.clear();
+
+		for (auto i = currSprites.begin(); i != currSprites.end(); i++)
+		{
+			PlanetObject s = *i;
+			float x = i->location->x, y = i->location->y;
+			if (x > xMIN && x < xMAX && y > yMIN && y < yMAX)
+			{
+				onScreenPlanets.push_back(s);
+			}
+		}
+	}
+
+	for (auto i = onScreenPlanets.begin(); i != onScreenPlanets.end(); i++)
+	{
+		floatPOINT fp = (*i).Draw(shipPosition);
+		if ((*i).planetWindow == nullptr)
+		{
+			(*i).planetWindow = new PlanetWindow();
+		}
+		if (playerShip->isTouching(&fp, (*i).width, &shipPosition, playerShip->width))
+		{			
+
+			if (!(*i).planetWindow->visited)
+			{
+				(*i).planetWindow->visited = true;
+				GameController::OpenPopUp((*i).planetWindow);
+				break;
+			}
+		}				
+		else { (*i).planetWindow->visited = false; }
+	}
+
+	//for (auto i = onScreenPlanets.begin(); i != onScreenPlanets.end(); i++)
+	//{
+	//	PlanetObject s = *i;
+	//	s.Draw();
+	//	//s.Draw(*s.location + shipPosition);
+	//	
+	//	if (playerShip->isTouching(&s))
+	//	{
+	//		//if (!s.obj->planetWindow->visited)
+	//		//{
+	//		//	s.obj->planetWindow->visited = true;
+	//		//	GameController::OpenPopUp(s.obj->planetWindow);
+	//		//}
+	//		break;
+	//	}
+	//	else
+	//	{
+	//		//s.obj->planetWindow->visited = false;
+	//	}
+	//}
 
 	wchar_t CurrScienceString[40];
-	swprintf_s(CurrScienceString, L"Enemy: %0.2f, %0.2f", enemyShip->location->x, enemyShip->location->y);
+	swprintf_s(CurrScienceString, L"Total Science: %d", *gfx->Science);
 
 	wchar_t CurrEnergyString[40];
-	swprintf_s(CurrEnergyString, L"Player: %0.2f, %0.2f; %0.2f", playerShip->location->x, playerShip->location->y, sqrtf(pow(playerShip->speed->x,2) + pow(playerShip->speed->y, 2)));
+	swprintf_s(CurrEnergyString, L"Total Energy: %d", *gfx->Energy);
+
+	//wchar_t CurrScienceString[40];
+	//swprintf_s(CurrScienceString, L"Enemy: %0.2f, %0.2f", enemyShip->location->x, enemyShip->location->y);
+
+	//wchar_t CurrEnergyString[40];
+	//swprintf_s(CurrEnergyString, L"Player: %0.2f, %0.2f; %0.2f", playerShip->location->x, playerShip->location->y, sqrtf(pow(playerShip->speed->x,2) + pow(playerShip->speed->y, 2)));
 
 	gfx->DrawRect(0, windowSize.height - 30, windowSize.width / 2, 30, D2D1::ColorF::DarkGray, true);
 	gfx->DrawRect(0, windowSize.height - 30, windowSize.width / 2, 30, D2D1::ColorF::Black, false);
@@ -237,8 +276,6 @@ void Level1::repopSector()
 {
 	D2D1_SIZE_F windowSize = gfx->GetRenderTarget()->GetSize();
 
-	
-
 	currSprites.clear();
 
 	for (int i = -UNIVERSE_HEIGHT; i < UNIVERSE_HEIGHT; i++)
@@ -247,24 +284,10 @@ void Level1::repopSector()
 		{
 			if (rand() % CHANCE_OF_PLANET == 0)
 			{
-				int selPlanet = rand() % 3;
-				Planet s;
-				switch (selPlanet)
-				{
-				case 0:
-					s.obj = new MovableObject(*basePlanet1);
-					break;
-				case 1:
-					s.obj = new MovableObject(*basePlanet2);
-					break;
-				case 2:
-					s.obj = new MovableObject(*basePlanet3);					
-					break;
-				}
-				//delete(s.ss->location);
-				s.obj->location = new floatPOINT{ (windowSize.width / 10) * i + s.obj->width / 2, (windowSize.height / 10) * j + s.obj->height / 2 };
-
-				currSprites.emplace_back(s);
+				PlanetObject p = new PlanetObject(planets[rand() % planets.size()]);
+				p.location = new floatPOINT{ (windowSize.width / 10) * i + p.width / 2, (windowSize.height / 10) * j + p.height / 2 };
+				p.anchorPoint = anchor;
+				currSprites.emplace_back(p);
 			}
 		}
 	}

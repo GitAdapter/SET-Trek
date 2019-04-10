@@ -1,11 +1,7 @@
 #pragma once
 #include "GameLevel.h"
 #include "MovableObject.h"
-#include "AnimationObject.h"
-
-struct Planet {
-	MovableObject* obj = new MovableObject();
-};
+#include "PlanetObject.h"
 
 class Level1 : public GameLevel
 {
@@ -13,10 +9,6 @@ class Level1 : public GameLevel
 	floatPOINT shipPosition;
 
 	MovableObject* background;
-
-	MovableObject* basePlanet1;
-	MovableObject* basePlanet2;
-	MovableObject* basePlanet3;
 	
 	MovableObject* playerShip;
 	MovableObject* playerDetails;
@@ -24,11 +16,15 @@ class Level1 : public GameLevel
 	
 	MovableObject* enemyShip;
 
-	AnimationObject* explosion1;
+	std::vector<AnimationObject*> planets;
+	std::vector<AnimationObject*> explosions;
+	std::vector<AnimationObject*> randomEnvironment;
+
+	AnimationObject* boxes;
 	AnimationObject* shootingStar;
 
-	std::vector<Planet> currSprites;
-	std::vector<Planet> onScreenPlanets;
+	std::vector<PlanetObject> currSprites;
+	std::vector<PlanetObject> onScreenPlanets;
 	std::list<AnimationObject> animations;
 
 public:
