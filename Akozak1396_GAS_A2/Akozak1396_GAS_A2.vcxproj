@@ -160,15 +160,12 @@
     <Image Include="Resources\images\spinningGlobe4.png" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Source Files\AnimationObject.h" />
     <ClInclude Include="Source Files\floatPoint.h" />
     <ClInclude Include="Source Files\GameController.h" />
     <ClInclude Include="Source Files\GameLevel.h" />
     <ClInclude Include="Source Files\GameOver.h" />
     <ClInclude Include="Source Files\Graphics.h" />
     <ClInclude Include="Source Files\Level1.h" />
-    <ClInclude Include="Source Files\MovableObject.h" />
-    <ClInclude Include="Source Files\PlanetObject.h" />
     <ClInclude Include="Source Files\PlanetWindow.h" />
     <ClInclude Include="Source Files\VisibleObject.h" />
   </ItemGroup>

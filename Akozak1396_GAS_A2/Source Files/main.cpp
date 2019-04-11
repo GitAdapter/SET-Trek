@@ -52,7 +52,7 @@ int WINAPI wWinMain(
 
 	//Below is another important process to understand... what are we doing?
 	//Why is this connected to rect we just defined above?
-	HWND windowhandle = CreateWindowEx(WS_EX_OVERLAPPEDWINDOW, "MainWindow", "DirectXShell1", WS_OVERLAPPEDWINDOW, 100, 100, 
+	HWND windowhandle = CreateWindowEx(WS_EX_OVERLAPPEDWINDOW, "MainWindow", "SET-TREK", WS_OVERLAPPEDWINDOW, 100, 100, 
 		rect.right - rect.left, rect.bottom - rect.top, NULL, NULL, hInstance, 0);
 	if (!windowhandle) return -1;
 
@@ -64,9 +64,10 @@ int WINAPI wWinMain(
 	}
 
 	GameLevel::Init(graphics);
-	ShowWindow(windowhandle, nCmdShow);
+	ShowWindow(windowhandle, nCmdShow);	
 	GameController::LoadInitialLevel(new Level1());
 
+	graphics->LoadResources();
 #pragma region GameLoop
 	//Below, we have essentially an infinite loop that will keep the window running and will dispatch/show messages
 	//As many people will tell you, most Windows you see are just infinite loops waiting for some kind of work-flow or 
@@ -105,7 +106,9 @@ int WINAPI wWinMain(
 
 			//Render Routine... This is very modular. GameController now handles the rendering
 			graphics->BeginDraw();
+			//graphics->background->Draw();
 			GameController::Render();
+			//graphics->DrawCircle(10, 10, 100, 10, 10, 10, 10);
 			graphics->EndDraw();
 			message.message = WM_NULL;
 		}

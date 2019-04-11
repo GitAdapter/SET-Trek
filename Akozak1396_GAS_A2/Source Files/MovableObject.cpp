@@ -1,4 +1,4 @@
-#include "MovableObject.h"
+#include "VisibleObject.h"
 
 /****************************************************
 The concept behind this class is that it will be passed
@@ -33,8 +33,10 @@ MovableObject::MovableObject(MovableObject *m)
 	*chromakeyEffect = *(m->chromakeyEffect);
 }
 
-MovableObject::MovableObject(const wchar_t* filename, Graphics* gfx, bool isS, floatPOINT *anchor, D2D1_VECTOR_3F chroma, int numRows, int numColumns)
+MovableObject::MovableObject(const wchar_t* filename, ID2D1RenderTarget* rt, ID2D1DeviceContext* dc, bool isS, floatPOINT *anchor, D2D1_VECTOR_3F chroma, int numRows, int numColumns)
 {	
+	renderTarget = rt;
+	deviceContext = dc;
 	this->gfx = gfx; //save the gfx parameter for later
 	bmp = NULL; //This needs to be NULL to start off
 	HRESULT hr;
@@ -73,7 +75,7 @@ MovableObject::MovableObject(const wchar_t* filename, Graphics* gfx, bool isS, f
 	
 	if (numColumns * numRows != 0)
 	{
-		D2D1_SIZE_F windowSize = gfx->GetRenderTarget()->GetSize();
+		D2D1_SIZE_F windowSize = renderTarget->GetSize();
 		UINT X, Y;
 		wicFrame->GetSize(&X, &Y);
 
@@ -129,7 +131,7 @@ MovableObject::MovableObject(const wchar_t* filename, Graphics* gfx, bool isS, f
 	}
 
 //Step 6: Create the D2D Bitmap! Finally!
-	gfx->GetRenderTarget()->CreateBitmapFromWicBitmap(
+	renderTarget->CreateBitmapFromWicBitmap(
 		wicConverter, //Our friend the converter
 		NULL, //Can specify D2D1_Bitmap_Properties here, not needed now
 		&bmp //Our destination bmp we specified earlier in the header
@@ -137,7 +139,7 @@ MovableObject::MovableObject(const wchar_t* filename, Graphics* gfx, bool isS, f
 
 
 	chromakeyEffect = NULL;
-	gfx->GetDeviceContext()->CreateEffect(CLSID_D2D1ChromaKey, &chromakeyEffect);
+	deviceContext->CreateEffect(CLSID_D2D1ChromaKey, &chromakeyEffect);
 	chromakeyEffect->SetInput(0, bmp);
 	chromakeyEffect->SetValue(D2D1_CHROMAKEY_PROP_COLOR, chroma);
 	chromakeyEffect->SetValue(D2D1_CHROMAKEY_PROP_TOLERANCE, 0.8f);
@@ -202,7 +204,7 @@ void MovableObject::getShipSpeed(floatPOINT start, floatPOINT end, floatPOINT *s
 	{
 		float bss = baseShipSpeed;
 		double distance = sqrt(SQUARE(ax - bx) + SQUARE(ay - by));
-		if (isEnemy && distance < gfx->GetRenderTarget()->GetSize().width / 5)
+		if (isEnemy && distance < renderTarget->GetSize().width / 5)
 		{
 			bss *= 1.1f;
 		}
@@ -218,7 +220,7 @@ void MovableObject::getShipSpeed(floatPOINT start, floatPOINT end, floatPOINT *s
 
 void MovableObject::Draw()
 {
-	gfx->GetDeviceContext()->DrawImage(bmp, D2D1::Point2F(location->x - bmp->GetSize().width / 2, location->y - bmp->GetSize().height / 2));
+	deviceContext->DrawImage(bmp, D2D1::Point2F(location->x - bmp->GetSize().width / 2, location->y - bmp->GetSize().height / 2));
 }
 
 void MovableObject::Draw(floatPOINT drawloc, bool shouldChroma, float rotation)
@@ -226,14 +228,14 @@ void MovableObject::Draw(floatPOINT drawloc, bool shouldChroma, float rotation)
 	floatPOINT location;
 	location.x = drawloc.x - anchorPoint->x;
 	location.y = drawloc.y - anchorPoint->y;
-	gfx->GetDeviceContext()->SetTransform(D2D1::Matrix3x2F::Rotation(rotation, D2D1::Point2F(location.x, location.y)));
+	deviceContext->SetTransform(D2D1::Matrix3x2F::Rotation(rotation, D2D1::Point2F(location.x, location.y)));
 	if (shouldChroma) 
 	{
-		gfx->GetDeviceContext()->DrawImage(chromakeyEffect, D2D1::Point2F(location.x - bmp->GetSize().width / 2, location.y - bmp->GetSize().height / 2));
+		deviceContext->DrawImage(chromakeyEffect, D2D1::Point2F(location.x - bmp->GetSize().width / 2, location.y - bmp->GetSize().height / 2));
 	}
 	else
 	{
-		gfx->GetDeviceContext()->DrawImage(bmp, D2D1::Point2F(location.x - bmp->GetSize().width / 2, location.y - bmp->GetSize().height / 2));
+		deviceContext->DrawImage(bmp, D2D1::Point2F(location.x - bmp->GetSize().width / 2, location.y - bmp->GetSize().height / 2));
 	}
-	gfx->GetDeviceContext()->SetTransform(D2D1::Matrix3x2F::Rotation(0, D2D1::Point2F(location.x, location.y)));
+	deviceContext->SetTransform(D2D1::Matrix3x2F::Rotation(0, D2D1::Point2F(location.x, location.y)));
 }

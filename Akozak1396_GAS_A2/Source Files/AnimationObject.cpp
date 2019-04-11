@@ -1,5 +1,5 @@
 #pragma once
-#include "AnimationObject.h"
+#include "VisibleObject.h"
 
 /****************************************************
 The concept behind this class is that it will be passed
@@ -13,9 +13,11 @@ any bitmap from disk/resources into the game and use it
 within Directx (D2D specifically for now)
 
 *******************************************************/
+
 AnimationObject::AnimationObject(AnimationObject *m)
 {
-	gfx = m->gfx;
+	renderTarget = m->renderTarget;
+	deviceContext = m->deviceContext;
 	width = m->width;
 	height = m->height;
 	frameSpeed = m->frameSpeed;
@@ -26,8 +28,10 @@ AnimationObject::AnimationObject(AnimationObject *m)
 	bmp = m->bmp;
 }
 
-AnimationObject::AnimationObject(const wchar_t* filename, Graphics* gfx, floatPOINT *anchor, int numRows, int numColumns, int frameRows, int frameColumns, int framesPerRender, int repeat)
+AnimationObject::AnimationObject(const wchar_t* filename, ID2D1RenderTarget* rt, ID2D1DeviceContext* dc, floatPOINT *anchor, int numRows, int numColumns, int frameRows, int frameColumns, int framesPerRender, int repeat)
 {
+	renderTarget = rt;
+	deviceContext = dc;
 	frameSpeed = framesPerRender;
 	this->gfx = gfx; //save the gfx parameter for later
 	HRESULT hr;
@@ -47,7 +51,7 @@ AnimationObject::AnimationObject(const wchar_t* filename, Graphics* gfx, floatPO
 
 	bmp.clear();	
 	int x = 0, y = 0;
-	D2D1_SIZE_F windowSize = gfx->GetRenderTarget()->GetSize();
+	D2D1_SIZE_F windowSize = renderTarget->GetSize();
 
 	//Step 2: Create a Decoder to read file into a WIC Bitmap
 	IWICBitmapDecoder *wicDecoder = NULL;
@@ -126,7 +130,7 @@ AnimationObject::AnimationObject(const wchar_t* filename, Graphics* gfx, floatPO
 			);
 
 			//Step 6: Create the D2D Bitmap! Finally!
-			gfx->GetRenderTarget()->CreateBitmapFromWicBitmap(
+			renderTarget->CreateBitmapFromWicBitmap(
 				wicConverter, //Our friend the converter
 				NULL, //Can specify D2D1_Bitmap_Properties here, not needed now
 				&frame //Our destination bmp we specified earlier in the header
@@ -151,6 +155,8 @@ AnimationObject::AnimationObject(const wchar_t* filename, Graphics* gfx, floatPO
 
 AnimationObject::~AnimationObject()
 {
+	bmp.clear();
+
 	/*for (auto i = bmp.begin(); i != bmp.end(); i++)
 	{
 		((ID2D1Bitmap*)*i)->Release();
@@ -176,7 +182,7 @@ void AnimationObject::Draw()
 	{
 		ID2D1Bitmap* bit = bmp[int(currentFrame / frameSpeed)];
 		D2D1_SIZE_F sz = bit->GetSize();
-		gfx->GetDeviceContext()->DrawImage(bit, D2D1::Point2F(location->x - bit->GetSize().width / 2, location->y - bit->GetSize().height / 2));
+		deviceContext->DrawImage(bit, D2D1::Point2F(location->x - bit->GetSize().width / 2, location->y - bit->GetSize().height / 2));
 	}
 }
 
@@ -206,7 +212,7 @@ floatPOINT AnimationObject::Draw(floatPOINT drawloc)
 	{
 		ID2D1Bitmap* bit = bmp[int(currentFrame / frameSpeed)];
 		D2D1_SIZE_F sz = bit->GetSize();
-		gfx->GetDeviceContext()->DrawImage(bit, D2D1::Point2F(finalLoc.x, finalLoc.y));
+		deviceContext->DrawImage(bit, D2D1::Point2F(finalLoc.x, finalLoc.y));
 	}
 	return finalLoc;
 }

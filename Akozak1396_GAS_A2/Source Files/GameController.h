@@ -1,7 +1,10 @@
 #pragma once
 
 #include "GameLevel.h"
+
+#ifndef GRAPHICS_DEFINED
 #include "Graphics.h"
+#endif // !GRAPHICS_DEFINED
 
 //This will be a Singleton class (constructor is private)
 

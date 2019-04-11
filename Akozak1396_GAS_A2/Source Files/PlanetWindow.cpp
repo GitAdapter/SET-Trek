@@ -1,5 +1,4 @@
 #include "PlanetWindow.h"
-#include "PlanetObject.h"
 #include "GameController.h"
 
 void PlanetWindow::Load()
