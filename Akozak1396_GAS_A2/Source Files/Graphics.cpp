@@ -34,6 +34,28 @@ Graphics::Graphics()
 	inFile.close();
 }
 
+//Provide some comments for each of the methods below.
+//Be sure you get a sense of what is happening, and resolve any issues you have understanding these
+// methods, their parameters, returns and so on.
+bool Graphics::Init(HWND windowHandle)
+{
+	HRESULT res = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &factory);
+	if (res != S_OK) return false;
+
+	RECT rect;
+	GetClientRect(windowHandle, &rect); //set the rect's right and bottom properties = the client window's size
+
+	res = factory->CreateHwndRenderTarget(
+		D2D1::RenderTargetProperties(),
+		D2D1::HwndRenderTargetProperties(windowHandle, D2D1::SizeU(rect.right, rect.bottom)),
+		&rendertarget);
+	if (res != S_OK) return false;
+
+	res = rendertarget->CreateSolidColorBrush(D2D1::ColorF(0, 0, 0, 0), &brush);
+	if (res != S_OK) return false;
+	return true;
+}
+
 //Destructor for Graphics class
 //Note that all COM objects we instantiate should be 'released' here 
 //Look for comments on COM usage in the corresponding header file.
@@ -136,6 +158,7 @@ void Graphics::RenderShipScreen()
 	}
 
 	playerShip->Draw(shipPosition, false, playerShip->angle);
+	//playerShipExhaust->Draw(shipPosition);
 	enemyPointer->Draw(shipPosition, true, enemyShip->angle + 180);
 	enemyShip->Draw(*enemyShip->location + shipPosition, true, enemyShip->angle + 180);
 
@@ -174,14 +197,6 @@ void Graphics::RenderShipScreen()
 	DrawRect(windowSize.width / 2, windowSize.height - 30, windowSize.width / 2, 30, D2D1::ColorF::Black, false);
 	DrawScreenText(CurrEnergyString, windowSize.width / 2, windowSize.height - 30, windowSize.width / 2, 30, D2D1::ColorF::White, 24);
 
-	//if (gfx->message != nullptr)
-	//{
-	//	if (gfx->message->message != 0)
-	//	{
-	//		swprintf_s(CurrEnergyString, L"Mesage Number: %d", gfx->message->message);
-	//		gfx->DrawScreenText(CurrEnergyString, windowSize.width / 2, windowSize.height - 60, windowSize.width / 2, 30, D2D1::ColorF::White, 24);
-	//	}
-	//}
 	oldShipPosition.x = playerShip->location->x;
 	oldShipPosition.y = playerShip->location->y;
 }
@@ -198,32 +213,10 @@ Graphics::~Graphics()
 	if (brush) brush->Release();
 }
 
-//Provide some comments for each of the methods below.
-//Be sure you get a sense of what is happening, and resolve any issues you have understanding these
-// methods, their parameters, returns and so on.
-bool Graphics::Init(HWND windowHandle)
-{
-	HRESULT res = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &factory);
-	if (res != S_OK) return false;
-
-	RECT rect;
-	GetClientRect(windowHandle, &rect); //set the rect's right and bottom properties = the client window's size
-
-	res = factory->CreateHwndRenderTarget(
-		D2D1::RenderTargetProperties(),
-		D2D1::HwndRenderTargetProperties(windowHandle, D2D1::SizeU(rect.right, rect.bottom)),
-		&rendertarget);
-	if (res != S_OK) return false;
-	
-	res = rendertarget->CreateSolidColorBrush(D2D1::ColorF(0, 0, 0, 0), &brush);
-	if (res != S_OK) return false;
-	return true;
-}
-
 void Graphics::LoadResources()
 {
 	playerShip = new MovableObject(L"Resources\\images\\PlayerShip.png", GetRenderTarget(), GetDeviceContext(), true, new floatPOINT());
-
+	playerShipExhaust = new AnimationObject(L"Resources\\images\\exhaust.png", GetRenderTarget(), GetDeviceContext(), new floatPOINT(), 10, 10, 3, 1, 5, -1);
 	ID2D1RenderTarget* rt = GetRenderTarget();
 	*anchor = *playerShip->location;
 
@@ -245,10 +238,11 @@ void Graphics::LoadResources()
 	planets.push_back(new AnimationObject(L"Resources\\images\\p9.png", GetRenderTarget(), GetDeviceContext(), anchor, 10, 10, 4, 4, 5));
 	planets.push_back(new AnimationObject(L"Resources\\images\\p10.png", GetRenderTarget(), GetDeviceContext(), anchor, 10, 10, 4, 4, 5));
 
-	playerDetails = new MovableObject(L"Resources\\images\\ShipDetail.bmp", GetRenderTarget(), GetDeviceContext(), true, playerShip->anchorPoint); //This is where we can specify our file system object!
 	enemyPointer = new MovableObject(L"Resources\\images\\EnemyDirection.bmp", GetRenderTarget(), GetDeviceContext(), true, playerShip->anchorPoint, { 0.0f, 1.0f, 0.0f }, 5, 5); //This is where we can specify our file system object!
-	enemyShip = new MovableObject(L"Resources\\images\\EnemyShip.bmp", GetRenderTarget(), GetDeviceContext(), false, anchor, { 0.0f, 0.0f, 1.0f });
+	enemyShip = new MovableObject(L"Resources\\images\\EnemyShip.png", GetRenderTarget(), GetDeviceContext(), false, anchor, { 0.0f, 0.0f, 1.0f }, 5, 5);
 	enemyShip->desintation = playerShip->location;
+
+	boxes = new AnimationObject(L"Resources\\images\\chicken.png", GetRenderTarget(), GetDeviceContext(), anchor, 0, 0, 1, 41, 8);
 
 	globes.push_back(new AnimationObject(L"Resources\\images\\spinningGlobe1.png", GetRenderTarget(), GetDeviceContext(), anchor, 0, 0, 1, 60, 5, -1));
 	globes.push_back(new AnimationObject(L"Resources\\images\\spinningGlobe2.png", GetRenderTarget(), GetDeviceContext(), anchor, 0, 0, 1, 60, 5, -1));
@@ -262,17 +256,8 @@ void Graphics::LoadResources()
 	explosions.push_back(new AnimationObject(L"Resources\\images\\explosion5.png", GetRenderTarget(), GetDeviceContext(), anchor, 0, 0, 10, 7, 2));
 
 	randomEnvironment.push_back(new AnimationObject(L"Resources\\images\\ShootingStar.png", GetRenderTarget(), GetDeviceContext(), anchor, 0, 0, 1, 23, 2));
-	randomEnvironment.push_back(randomEnvironment[0]);
-	randomEnvironment.push_back(randomEnvironment[0]);
-	randomEnvironment.push_back(randomEnvironment[0]);
-	randomEnvironment.push_back(randomEnvironment[0]);
-	randomEnvironment.push_back(explosions[0]);
-	randomEnvironment.push_back(explosions[1]);
-	randomEnvironment.push_back(explosions[2]);
-	randomEnvironment.push_back(explosions[3]);
-	randomEnvironment.push_back(explosions[4]);
-
-	boxes = new AnimationObject(L"Resources\\images\\chicken.png", GetRenderTarget(), GetDeviceContext(), anchor, 2, 2, 1, 41, 8);
+	randomEnvironment.push_back(new AnimationObject(L"Resources\\images\\ShootingStar2.png", GetRenderTarget(), GetDeviceContext(), anchor, 2, 1, 1, 15, 2));
+	randomEnvironment.push_back(new AnimationObject(L"Resources\\images\\spin.png", GetRenderTarget(), GetDeviceContext(), anchor, 10, 10, 2, 2, 5, 10));
 
 	RefreshSector();
 }

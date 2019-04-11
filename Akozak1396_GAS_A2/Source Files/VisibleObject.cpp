@@ -5,8 +5,8 @@ bool VisibleObject::isTouching(VisibleObject *planet)
 	bool isTouch = false;
 	VisibleObject *ship = this;
 
-	int sRad = ship->width / 3;
-	int pRad = planet->width / 3;
+	int sRad = ship->width / 2;
+	int pRad = planet->width / 2;
 
 	POINT sCenter;
 	sCenter.x = (ship->width / 2) + ship->location->x;
@@ -14,7 +14,7 @@ bool VisibleObject::isTouching(VisibleObject *planet)
 
 	POINT pCenter;
 	pCenter.x = (planet->width / 2) + planet->location->x;
-	pCenter.y = (planet->width / 2) + planet->location->y;
+	pCenter.y = (planet->height / 2) + planet->location->y;
 
 	double distance = sqrt(SQUARE(pCenter.x - sCenter.x) + SQUARE(pCenter.y - sCenter.y));
 

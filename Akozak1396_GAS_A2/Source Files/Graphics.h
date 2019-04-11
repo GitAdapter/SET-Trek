@@ -69,6 +69,7 @@ public:
 
 	MovableObject* background;
 
+	AnimationObject* playerShipExhaust;
 	MovableObject* playerShip;
 	MovableObject* playerDetails;
 	MovableObject* enemyPointer;
