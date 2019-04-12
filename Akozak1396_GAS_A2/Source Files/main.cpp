@@ -1,6 +1,15 @@
+/*  
+*  FILE          : main.cpp
+*  PROJECT       : PROG2215 - SET-TREK: The Search For Sound (Assignment #3)
+*  PROGRAMMER    : Alex Kozak
+*  FIRST VERSION : 2019-04-11 
+*  DESCRIPTION   : 
+*    The functions in this file are used to initialize the game view and base level options.
+*/
+
 #include <Windows.h>
+#include "MainGame.h"
 #include "Graphics.h"
-#include "Level1.h"
 #include "GameController.h"
 #include <time.h> 
 #include <windowsx.h>
@@ -63,23 +72,40 @@ int WINAPI wWinMain(
 		return -1;
 	}
 
-	GameLevel::Init(graphics);
+	GameLevel::Init(graphics);// , sounds);
 	ShowWindow(windowhandle, nCmdShow);	
-	GameController::LoadInitialLevel(new Level1());
+	PlaySound(TEXT("Resources\\sounds\\loading.wav"), NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
 
 	graphics->LoadResources();
-#pragma region GameLoop
+
+	MSG message;
+	message.message = WM_NULL; //Do not have this set to WM_QUIT, which has a specific context
+	graphics->message = &message;
+	bool isFirst = true;
+	while (isFirst && message.message != WM_QUIT)
+	{
+		if (PeekMessage(&message, NULL, 0, 0, PM_REMOVE))
+			//This allows us to send a message to the WindowProc IF there is one
+			DispatchMessage(&message);
+		else
+		{
+			if (message.message == WM_LBUTTONDOWN)
+			{
+				isFirst = false;
+			}
+		}
+	}
+
+	GameController::LoadInitialLevel(new MainGame());
+	#pragma region GameLoop
 	//Below, we have essentially an infinite loop that will keep the window running and will dispatch/show messages
 	//As many people will tell you, most Windows you see are just infinite loops waiting for some kind of work-flow or 
 	//system-based interuption.
 
 	//Note - Our message handling has changed from the first demo code.
 	//Here, we use a PeekMessage to avoid locking the graphics/windoProc
-	//when a message has to be dispatched.
-	MSG message;
-	message.message = WM_NULL; //Do not have this set to WM_QUIT, which has a specific context
-	graphics->message = &message;
-	while (message.message != WM_QUIT)
+	//when a message has to be dispatched.	
+	while (message.message != WM_QUIT && !isFirst)
 	{
 		if (PeekMessage(&message, NULL, 0, 0, PM_REMOVE))
 			//This allows us to send a message to the WindowProc IF there is one
@@ -100,16 +126,20 @@ int WINAPI wWinMain(
 				graphics->destination->x = GET_X_LPARAM(message.lParam);
 				graphics->destination->y = GET_Y_LPARAM(message.lParam);
 				graphics->isDragging = true;
-			}					
-			//Update Routine... we've moved the code for handling updates to GameController
-			GameController::Update();
+				isFirst = false;
+			}		
+			if (!isFirst)
+			{
+				//Update Routine... we've moved the code for handling updates to GameController
+				GameController::Update();
 
-			//Render Routine... This is very modular. GameController now handles the rendering
-			graphics->BeginDraw();
-			//graphics->background->Draw();
-			GameController::Render();
-			//graphics->DrawCircle(10, 10, 100, 10, 10, 10, 10);
-			graphics->EndDraw();
+				//Render Routine... This is very modular. GameController now handles the rendering
+				graphics->BeginDraw();
+				//graphics->background->Draw();
+				GameController::Render();
+				//graphics->DrawCircle(10, 10, 100, 10, 10, 10, 10);
+				graphics->EndDraw();
+			}
 			message.message = WM_NULL;
 		}
 	}

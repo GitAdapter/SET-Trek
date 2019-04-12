@@ -1,3 +1,12 @@
+/*
+*  FILE          : GameController.cpp
+*  PROJECT       : PROG2215 - SET-TREK: The Search For Sound (Assignment #3)
+*  PROGRAMMER    : Alex Kozak
+*  FIRST VERSION : 2019-04-11
+*  DESCRIPTION   :
+*    The functions in this file are used to run the main game and realizes all of the functionality of
+*	 the GameController class.
+*/
 
 #include "GameController.h"
 

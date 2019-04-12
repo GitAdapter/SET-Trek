@@ -1,3 +1,12 @@
+/*
+*  FILE          : FloatPoint.h
+*  PROJECT       : PROG2215 - SET-TREK: The Search For Sound (Assignment #3)
+*  PROGRAMMER    : Alex Kozak
+*  FIRST VERSION : 2019-04-11
+*  DESCRIPTION   :
+*    The functions in this file create a floatPOINT class which contains two floats (x and y)
+*	 which can be added together and compared. 
+*/
 
 #define F_POINT
 

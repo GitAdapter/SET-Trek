@@ -1,35 +1,49 @@
+/*
+*  FILE          : MovableObject.cpp
+*  PROJECT       : PROG2215 - SET-TREK: The Search For Sound (Assignment #3)
+*  PROGRAMMER    : Alex Kozak
+*  FIRST VERSION : 2019-04-11
+*  DESCRIPTION   :
+*    The functions in this file define the functionality of a MovableObject which (as the name
+*	 implies) is an object which moves. It has a speed, position, calculatable destination, and more.
+*/
+
 #include "VisibleObject.h"
 
-/****************************************************
-The concept behind this class is that it will be passed
-a filename and graphics object/rendertarget, then, will
-proceed to create the needed WIC components to read, 
-decode, and then encode the bitmap file from disk into
-a compatible D2D bitmap. 
-
-We need this approach to be able to address pretty much
-any bitmap from disk/resources into the game and use it
-within Directx (D2D specifically for now)
-
-*******************************************************/
-
+// prototypes
 void changeIndiv(float *, float, float);
 bool isTouching(MovableObject*);
 float getShipAngle(floatPOINT start, floatPOINT end);
 
 MovableObject::MovableObject(MovableObject *m)
 {
+	// take all vital pieces of info from the provided MovableObject class and save them to the local oject
 	width = m->width;
 	height = m->height;
 	angle = m->angle;
 
-	*speed = floatPOINT { 0.0f, 0.0f };
+	speed = new floatPOINT { 0.0f, 0.0f };
+	*speed = *m->speed;
+
+	if (m->location->x > m->desintation->x)
+	{
+		speed->x = -speed->x;
+	}
+
+	if (m->location->y > m->desintation->y)
+	{
+		speed->y = -speed->y;
+	}
 
 	*anchorPoint = *(m->anchorPoint);
-	*desintation = *(m->desintation);
-	*location = *(m->location);
+	*location = *(m->location);	
+	desintation = new floatPOINT();
+	*desintation = *m->location;
 
-	*bmp = *(m->bmp);
+	deviceContext = m->deviceContext;
+	renderTarget = m->renderTarget;
+
+	bmp = m->bmp;
 	*chromakeyEffect = *(m->chromakeyEffect);
 }
 
@@ -37,38 +51,23 @@ MovableObject::MovableObject(const wchar_t* filename, ID2D1RenderTarget* rt, ID2
 {	
 	renderTarget = rt;
 	deviceContext = dc;
-	this->gfx = gfx; //save the gfx parameter for later
-	bmp = NULL; //This needs to be NULL to start off
+	this->gfx = gfx;
+	bmp = NULL;
 	HRESULT hr;
 
 	floatPOINT zeroFP = floatPOINT{ 0.0f, 0.0f };
-
 	anchorPoint = anchor;
 	angle = 0;
 	speed = &zeroFP;
 
-	//Step 1: Create a WIC Factory
 	IWICImagingFactory *wicFactory = NULL;
-	hr = CoCreateInstance(
-		CLSID_WICImagingFactory, //CLS ID of the object about to be made
-		NULL, //not needed here, but just denotes this isn't part of an aggregate
-		CLSCTX_INPROC_SERVER, //Indicates this DLL runs in the same process
-		IID_IWICImagingFactory, //Reference to an Interface that talks to the object
-		(LPVOID*)&wicFactory); //This is our pointer to the WICFactory, once set up.
+	hr = CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, IID_IWICImagingFactory, (LPVOID*)& wicFactory);
 
-//Step 2: Create a Decoder to read file into a WIC Bitmap
 	IWICBitmapDecoder *wicDecoder = NULL;
-	hr = wicFactory->CreateDecoderFromFilename(
-		filename, //The filename we passed in already
-		NULL, //This can be used to indicate other/preferred decoders. Not something we need.
-		GENERIC_READ, //indicates we're reading from the file, vs writing, etc.
-		WICDecodeMetadataCacheOnLoad, //Needed, but would only help if we were keeping this in WIC
-		&wicDecoder); //Our pointer to the Decoder we've setup
+	hr = wicFactory->CreateDecoderFromFilename(filename, NULL, GENERIC_READ, WICDecodeMetadataCacheOnLoad, &wicDecoder);
 
-//Step 3: Read a 'frame'. We're really just moving the whole image into a frame here
 	IWICBitmapFrameDecode* wicFrame = NULL;
-	hr = wicDecoder->GetFrame(0, &wicFrame); //0 here means the first frame... or only one in our case
-	//Now, we've got a WICBitmap... we want it to be a D2D bitmap
+	hr = wicDecoder->GetFrame(0, &wicFrame);
 
 	IWICBitmapScaler *wicScaler = NULL;
 	hr = wicFactory->CreateBitmapScaler(&wicScaler);
@@ -79,65 +78,39 @@ MovableObject::MovableObject(const wchar_t* filename, ID2D1RenderTarget* rt, ID2
 		UINT X, Y;
 		wicFrame->GetSize(&X, &Y);
 
-
+		// determine which angle needs to be th smallet to determine the scaling factor to use
 		double a = (double)(windowSize.width / numRows) / X;
 		double b = (double)(windowSize.height / numColumns) / Y;
-
 		double scalingFactor = min(a, b);
 
+		// if numColums and numRows are 1, simply stretch to fill the screen, not shrink to fit.
 		if (numColumns * numRows == 1) scalingFactor = max(a, b);
 
 		if (SUCCEEDED(hr))
 		{
-			hr = wicScaler->Initialize(
-				wicFrame,
-				X*scalingFactor,
-				Y*scalingFactor,
-				WICBitmapInterpolationModeFant
-			);
+			hr = wicScaler->Initialize(wicFrame, X * scalingFactor, Y * scalingFactor, WICBitmapInterpolationModeFant);
 		}
 		width = X * scalingFactor;
 		height = Y * scalingFactor;
 	}
 
 
-//Step 4: Create a WIC Converter
 	IWICFormatConverter *wicConverter = NULL;
 	hr = wicFactory->CreateFormatConverter(&wicConverter);
 
 	if (numColumns * numRows == 0)
 	{
-		//Step 5: Configure the Converter
-		hr = wicConverter->Initialize(
-			wicFrame, //Our frame from above
-			GUID_WICPixelFormat32bppPBGRA, //Pixelformat
-			WICBitmapDitherTypeNone, //not important for us here
-			NULL, //indicates no palette is needed, not important here
-			0.0, //Alpha Transparency, can look at this later
-			WICBitmapPaletteTypeCustom //Not important for us here
-			);
+		hr = wicConverter->Initialize(wicFrame, GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, NULL, 0.0, WICBitmapPaletteTypeCustom);
 	}
 	else
 	{
-		//Step 5: Configure the Converter
-		hr = wicConverter->Initialize(
-			wicScaler, //Our frame from above
-			GUID_WICPixelFormat32bppPBGRA, //Pixelformat
-			WICBitmapDitherTypeNone, //not important for us here
-			NULL, //indicates no palette is needed, not important here
-			0.0, //Alpha Transparency, can look at this later
-			WICBitmapPaletteTypeCustom //Not important for us here
-		);
+		hr = wicConverter->Initialize(wicScaler, GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, NULL, 0.0, WICBitmapPaletteTypeCustom);
 	}
 
-//Step 6: Create the D2D Bitmap! Finally!
-	renderTarget->CreateBitmapFromWicBitmap(
-		wicConverter, //Our friend the converter
-		NULL, //Can specify D2D1_Bitmap_Properties here, not needed now
-		&bmp //Our destination bmp we specified earlier in the header
-	);
+	// create final bitmap
+	renderTarget->CreateBitmapFromWicBitmap(wicConverter, NULL, &bmp);
 
-
+	// generate final chromakeyed effect, to be used later if needed
 	chromakeyEffect = NULL;
 	deviceContext->CreateEffect(CLSID_D2D1ChromaKey, &chromakeyEffect);
 	chromakeyEffect->SetInput(0, bmp);
@@ -146,7 +119,6 @@ MovableObject::MovableObject(const wchar_t* filename, ID2D1RenderTarget* rt, ID2
 	chromakeyEffect->SetValue(D2D1_CHROMAKEY_PROP_INVERT_ALPHA, false);
 	chromakeyEffect->SetValue(D2D1_CHROMAKEY_PROP_FEATHER, false);
 
-	//Let us do some private object cleanup!
 	if (wicFactory) wicFactory->Release();
 	if (wicDecoder) wicDecoder->Release();
 	if (wicConverter) wicConverter->Release();
@@ -154,19 +126,18 @@ MovableObject::MovableObject(const wchar_t* filename, ID2D1RenderTarget* rt, ID2
 	if (wicScaler) wicScaler->Release();
 }
 
-MovableObject::~MovableObject()
-{
-	if (bmp) bmp->Release();
-}
+MovableObject::~MovableObject(){}
 
 void changeToward(floatPOINT *sp, floatPOINT ep, floatPOINT speed)
 {
+	// change both aspects of the floatPOINT towards teh destination by factor speed
 	changeIndiv((float *)(&sp->x), ep.x, speed.x);
 	changeIndiv((float *)(&sp->y), ep.y, speed.y);
 }
 
 void changeIndiv(float *sp, float ep, float speed)
 {
+	// change an individual x/y float based on direction and speed
 	float ydiff = *sp - ep;
 	if (abs(ydiff) < speed && abs(ydiff) > 0) { *sp = ep; }
 	else if (ydiff > 0) { *sp -= speed; }
@@ -175,6 +146,7 @@ void changeIndiv(float *sp, float ep, float speed)
 
 void MovableObject::moveObject(bool isEnemy)
 {
+	// move the object based on its location and destination, calculating speed.
 	getShipSpeed(*this->location, *this->desintation, this->speed, isEnemy);
 	this->angle = getShipAngle(*this->location, *this->desintation);
 	changeToward(this->location, *this->desintation, *this->speed);
@@ -182,30 +154,38 @@ void MovableObject::moveObject(bool isEnemy)
 
 float getShipAngle(floatPOINT start, floatPOINT end)
 {
+	// get deltas
 	float delta_x = start.x - end.x;
 	float delta_y = start.y - end.y;
+	
+	// get radian direction from location to destination
 	float theta_radians = atan2(delta_y, delta_x);
 
+	// determine if the radians need to be corrected in a direction or not
 	if (theta_radians < 0)
 		theta_radians = abs(theta_radians);
 	else
 		theta_radians = 2 * M_PI - theta_radians;
 
+	// return the degree conversion
 	return -((180.0f * theta_radians) / M_PI) + 180;
 }
 
 void MovableObject::getShipSpeed(floatPOINT start, floatPOINT end, floatPOINT *speed, bool isEnemy)
 {
+	// find deltas
 	float ax = start.x, ay = start.y, bx = end.x, by = end.y;
 	float deltaX = abs(ax - bx);
 	float deltaY = abs(ay - by);
 
+	// only get a speed if there is a need to move anywhere
 	if (deltaX > 0.1f || deltaY > 0.1f)
 	{
 		float bss = baseShipSpeed;
 		double distance = sqrt(SQUARE(ax - bx) + SQUARE(ay - by));
 		if (isEnemy && distance < renderTarget->GetSize().width / 5)
 		{
+			// close enough so enemy gets speed boost
 			bss *= 1.1f;
 		}
 		speed->x = (bss / (deltaX + deltaY)) * deltaX;
@@ -220,22 +200,30 @@ void MovableObject::getShipSpeed(floatPOINT start, floatPOINT end, floatPOINT *s
 
 void MovableObject::Draw()
 {
+	// draw the image given its internal parameters, done for background mostly
 	deviceContext->DrawImage(bmp, D2D1::Point2F(location->x - bmp->GetSize().width / 2, location->y - bmp->GetSize().height / 2));
 }
 
 void MovableObject::Draw(floatPOINT drawloc, bool shouldChroma, float rotation)
 {
+	// Generate the on-screen location to draw the object
 	floatPOINT location;
 	location.x = drawloc.x - anchorPoint->x;
 	location.y = drawloc.y - anchorPoint->y;
+
+	// set the rotation to the desired location, from the center
 	deviceContext->SetTransform(D2D1::Matrix3x2F::Rotation(rotation, D2D1::Point2F(location.x, location.y)));
+
+	// determine if to draw the chromakeyed object or not, account for the width/height of the image
 	if (shouldChroma) 
 	{
-		deviceContext->DrawImage(chromakeyEffect, D2D1::Point2F(location.x - bmp->GetSize().width / 2, location.y - bmp->GetSize().height / 2));
+		deviceContext->DrawImage(chromakeyEffect, D2D1::Point2F(location.x - width / 2, location.y - height / 2));
 	}
 	else
 	{
-		deviceContext->DrawImage(bmp, D2D1::Point2F(location.x - bmp->GetSize().width / 2, location.y - bmp->GetSize().height / 2));
+		deviceContext->DrawImage(bmp, D2D1::Point2F(location.x - width / 2, location.y - height / 2));
 	}
+
+	// reset the rotation to 0
 	deviceContext->SetTransform(D2D1::Matrix3x2F::Rotation(0, D2D1::Point2F(location.x, location.y)));
 }

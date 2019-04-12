@@ -1,19 +1,25 @@
+/*
+*  FILE          : Graphics.cpp
+*  PROJECT       : PROG2215 - SET-TREK: The Search For Sound (Assignment #3)
+*  PROGRAMMER    : Alex Kozak
+*  FIRST VERSION : 2019-04-11
+*  DESCRIPTION   :
+*    The functions in this file are used to handle any calls to the graphics class. The responsibilities
+*	 include the drawing of objects to teh screen, the storage of a number of preset animations and other
+*	 graphical assets, and determining change in positions. It is also responsible for generating the randomized
+*	 game area, and storing any currently active sprites. There are functions to create one-time tasks like
+*	 creating an explosion of a background simple animation. 
+*/
+
 #ifndef OBJECTS
 #include "Graphics.h"
 #endif // !OBJECTS
 
-
-/***********************************************************************************
-The intent of the Graphics class is to handle our DirectX calls, and to be largely responsible 
-for managing the rendertarget.
-******************************************************************************************/
-
 #define UNIVERSE_WIDTH 100
 #define UNIVERSE_HEIGHT UNIVERSE_WIDTH
 #define CHANCE_OF_PLANET 25
-#define ENEMY_DISTANCE 500
+#define ENEMY_DISTANCE 800
 
-//Constructor for Graphics class
 Graphics::Graphics()
 {
 	CreateDeviceIndependentResources(50.0f);
@@ -34,9 +40,6 @@ Graphics::Graphics()
 	inFile.close();
 }
 
-//Provide some comments for each of the methods below.
-//Be sure you get a sense of what is happening, and resolve any issues you have understanding these
-// methods, their parameters, returns and so on.
 bool Graphics::Init(HWND windowHandle)
 {
 	HRESULT res = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &factory);
@@ -78,6 +81,11 @@ void Graphics::UpdateVisuals()
 		enemyShip->moveObject(true);
 		playerShip->moveObject(false);
 	}
+
+	for (int i = 0; i < activeLasers.size(); i++)
+	{
+		activeLasers[i]->moveObject();
+	}
 }
 
 void Graphics::RefreshSector()
@@ -118,10 +126,9 @@ void Graphics::RepopulatePlanets()
 		{
 			if (rand() % CHANCE_OF_PLANET == 0)
 			{
-				PlanetObject p = new PlanetObject(planets[rand() % planets.size()]);
-				p.location = new floatPOINT{ (windowSize.width / 10) * i + p.width / 2, (windowSize.height / 10) * j + p.height / 2 };
-				p.anchorPoint = anchor;				
-				allPlanets.emplace_back(p);
+				allPlanets.emplace_back(new PlanetObject(planets[rand() % planets.size()]));
+				allPlanets.back()->anchorPoint = anchor;
+				allPlanets.back()->location = new floatPOINT{ (windowSize.width / 10) * i + allPlanets.back()->width / 2, (windowSize.height / 10) * j + allPlanets.back()->height / 2 };
 			}
 		}
 	}
@@ -137,6 +144,15 @@ void Graphics::PlayRandomEffect()
 	animations.push_back(ss);
 }
 
+void Graphics::CreateExplosion(floatPOINT dest)
+{
+	AnimationObject ss = new AnimationObject(explosions[rand() % explosions.size()]);
+	*ss.location = dest;
+	ss.anchorPoint = anchor;
+	animations.push_back(ss);
+
+}
+
 void Graphics::RenderShipScreen()
 {
 	D2D1_SIZE_F windowSize = GetRenderTarget()->GetSize();
@@ -148,19 +164,19 @@ void Graphics::RenderShipScreen()
 	{
 		(*i).Draw(shipPosition);
 	}
-	animations.remove_if(isComplete);
+	animations.remove_if(isAnimationComplete);
 
 	if (!planetOffset) { planetOffset = new floatPOINT{ shipPosition.x - windowSize.width / 20, shipPosition.y - windowSize.height / 20 }; }
 
 	for (int i = 0; i < onScreenPlanets.size(); i++)
 	{
-		onScreenPlanets[i].Draw(*planetOffset);
+		onScreenPlanets[i]->Draw(*planetOffset);
 	}
 
 	playerShip->Draw(shipPosition, false, playerShip->angle);
-	//playerShipExhaust->Draw(shipPosition);
+
 	enemyPointer->Draw(shipPosition, true, enemyShip->angle + 180);
-	enemyShip->Draw(*enemyShip->location + shipPosition, true, enemyShip->angle + 180);
+	enemyShip->Draw(*enemyShip->location + shipPosition, true, enemyShip->angle);
 
 	if (*playerShip->location != oldShipPosition && (((int)playerShip->location->x % (int)(windowSize.width / 10)) == 0 || ((int)playerShip->location->y % (int)(windowSize.height / 10)) == 0))
 	{
@@ -173,7 +189,7 @@ void Graphics::RenderShipScreen()
 
 		for (auto i = allPlanets.begin(); i != allPlanets.end(); i++)
 		{
-			float x = (*i).location->x, y = (*i).location->y;
+			float x = (*i)->location->x, y = (*i)->location->y;
 			if (x > xMIN && x < xMAX && y > yMIN && y < yMAX)
 			{
 				onScreenPlanets.push_back(*i);
@@ -201,7 +217,7 @@ void Graphics::RenderShipScreen()
 	oldShipPosition.y = playerShip->location->y;
 }
 
-bool isComplete(const AnimationObject& value) 
+bool isAnimationComplete(const AnimationObject& value) 
 { 
 	return value.completedAnimation; 
 }
@@ -215,13 +231,19 @@ Graphics::~Graphics()
 
 void Graphics::LoadResources()
 {
-	playerShip = new MovableObject(L"Resources\\images\\PlayerShip.png", GetRenderTarget(), GetDeviceContext(), true, new floatPOINT());
-	playerShipExhaust = new AnimationObject(L"Resources\\images\\exhaust.png", GetRenderTarget(), GetDeviceContext(), new floatPOINT(), 10, 10, 3, 1, 5, -1);
 	ID2D1RenderTarget* rt = GetRenderTarget();
-	*anchor = *playerShip->location;
-
 	shipPosition.x = rt->GetSize().width / 2 + 1;
 	shipPosition.y = rt->GetSize().height / 2;
+
+	SplashScreen = new MovableObject(L"Resources\\images\\splashScreen.jpg", GetRenderTarget(), GetDeviceContext(), false, new floatPOINT(), { 0,0,0 }, 1, 1);
+	
+	BeginDraw();
+	SplashScreen->Draw(shipPosition, false);
+	DrawScreenText(L"Loading...", 0, rt->GetSize().height - 100, rt->GetSize().width / 2, 100, D2D1::ColorF::Yellow, 48);
+	EndDraw();
+
+	playerShip = new MovableObject(L"Resources\\images\\PlayerShip.png", GetRenderTarget(), GetDeviceContext(), true, new floatPOINT());
+	*anchor = *playerShip->location;
 
 	background = new MovableObject(L"Resources\\images\\bg.jpg", GetRenderTarget(), GetDeviceContext(), false, anchor, { 0,0,0 }, 0.05, 0.05);
 	background->location = &shipPosition;
@@ -242,8 +264,6 @@ void Graphics::LoadResources()
 	enemyShip = new MovableObject(L"Resources\\images\\EnemyShip.png", GetRenderTarget(), GetDeviceContext(), false, anchor, { 0.0f, 0.0f, 1.0f }, 5, 5);
 	enemyShip->desintation = playerShip->location;
 
-	boxes = new AnimationObject(L"Resources\\images\\chicken.png", GetRenderTarget(), GetDeviceContext(), anchor, 0, 0, 1, 41, 8);
-
 	globes.push_back(new AnimationObject(L"Resources\\images\\spinningGlobe1.png", GetRenderTarget(), GetDeviceContext(), anchor, 0, 0, 1, 60, 5, -1));
 	globes.push_back(new AnimationObject(L"Resources\\images\\spinningGlobe2.png", GetRenderTarget(), GetDeviceContext(), anchor, 0, 0, 1, 60, 5, -1));
 	globes.push_back(new AnimationObject(L"Resources\\images\\spinningGlobe3.png", GetRenderTarget(), GetDeviceContext(), anchor, 0, 0, 1, 60, 5, -1));
@@ -260,6 +280,11 @@ void Graphics::LoadResources()
 	randomEnvironment.push_back(new AnimationObject(L"Resources\\images\\spin.png", GetRenderTarget(), GetDeviceContext(), anchor, 10, 10, 2, 2, 5, 10));
 
 	RefreshSector();
+
+	BeginDraw();
+	SplashScreen->Draw(shipPosition, false);
+	DrawScreenText(L"Click anywhere to continue", 0, rt->GetSize().height - 100, rt->GetSize().width / 2, 100, D2D1::ColorF::Yellow, 48);
+	EndDraw();
 }
 
 void Graphics::ClearScreen(float r, float g, float b) 

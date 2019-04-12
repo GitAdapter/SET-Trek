@@ -1,3 +1,13 @@
+/*
+*  FILE          : Graphics.h
+*  PROJECT       : PROG2215 - SET-TREK: The Search For Sound (Assignment #3)
+*  PROGRAMMER    : Alex Kozak
+*  FIRST VERSION : 2019-04-11
+*  DESCRIPTION   :
+*    The functions in this file are used to initialize the Graphics class, which contains
+*	 a number of items inclusing the ships, animations, effects, and more. 
+*/
+
 #pragma once
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "Dwrite.lib")
@@ -47,7 +57,7 @@
 
 #define GRAPHICS_DEFINED
 
-bool isComplete(const AnimationObject& value);
+bool isAnimationComplete(const AnimationObject& value);
 
 class Graphics
 {
@@ -70,9 +80,11 @@ public:
 	MovableObject* background;
 
 	AnimationObject* playerShipExhaust;
+	MovableObject* laserImage;
 	MovableObject* playerShip;
 	MovableObject* playerDetails;
 	MovableObject* enemyPointer;
+	MovableObject* SplashScreen;
 
 	MovableObject* enemyShip;
 
@@ -81,11 +93,13 @@ public:
 	std::vector<AnimationObject*> randomEnvironment;
 	std::vector<AnimationObject*> globes;
 
+	std::vector<MovableObject*> activeLasers;
+
 	AnimationObject* boxes;
 	AnimationObject* shootingStar;
 
-	std::vector<PlanetObject> allPlanets;
-	std::vector<PlanetObject> onScreenPlanets;
+	std::vector<PlanetObject*> allPlanets;
+	std::vector<PlanetObject*> onScreenPlanets;
 	std::list<AnimationObject> animations;
 
 	std::vector<std::string> planetNames;
@@ -128,4 +142,5 @@ public:
 	void RenderShipScreen();
 	void LoadResources();
 	void PlayRandomEffect();
+	void CreateExplosion(floatPOINT);
 };

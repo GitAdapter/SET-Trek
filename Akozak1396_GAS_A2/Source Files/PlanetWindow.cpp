@@ -1,3 +1,13 @@
+/*
+*  FILE          : PlanetWindow.cpp
+*  PROJECT       : PROG2215 - SET-TREK: The Search For Sound (Assignment #3)
+*  PROGRAMMER    : Alex Kozak
+*  FIRST VERSION : 2019-04-11
+*  DESCRIPTION   :
+*    The functions in this file are used to define the functionality of the PlanetWindow class'
+*	 core functionality and how it interacts with the main level.
+*/
+
 #include "PlanetWindow.h"
 #include "GameController.h"
 
@@ -84,22 +94,29 @@ void PlanetWindow::Render()
 
 	if (gfx->destination->y > size.height - 225)
 	{
+		char buffer[100];
 		if (gfx->destination->y < size.height - 150)
-		{
+		{			
+			sprintf(buffer, "play \"%s\"", soundLibrary[Sound::click]);			
+
 			*gfx->Energy += energy;
 			if (*gfx->Energy > 900) { *gfx->Energy = 900; }
 			energy = 0;
 		}
 		else if (gfx->destination->y < size.height - 75)
 		{
+			sprintf(buffer, "play \"%s\"", soundLibrary[Sound::confirm]);
 			*gfx->Science += science;
 			science = 0;
 		}
 		else
 		{
+			sprintf(buffer, "play \"%s\"", soundLibrary[Sound::error]);
 			gfx->destination->x = -1;
 			visited = true;
 			GameController::ClosePopUp();
 		}
+		mciSendString(buffer, NULL, 0, NULL);
+		gfx->destination->y = 0;
 	}
 }

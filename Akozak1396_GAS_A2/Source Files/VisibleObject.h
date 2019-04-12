@@ -1,6 +1,17 @@
-#define _USE_MATH_DEFINES
+/*
+*  FILE          : VisibleObject.cpp
+*  PROJECT       : PROG2215 - SET-TREK: The Search For Sound (Assignment #3)
+*  PROGRAMMER    : Alex Kozak
+*  FIRST VERSION : 2019-04-11
+*  DESCRIPTION   :
+*    The functions in this file contain the VisibleObject class and all of its children. These children are the Movable Object class
+*	 which is capable of having a speed and a direction, the AnimationObject class which is seperated by frames and visually shifts over time
+*	 and the PlanetObject class which is an AnimationObject class with an additional pointer to a PlanetWindow. Each of these are fully realized
+*	 in their own cpp file.
+*/
 
 #pragma once
+#define _USE_MATH_DEFINES
 #include <vector>
 #include <d2d1_1.h>
 #include <d2d1effects_2.h>
@@ -41,6 +52,7 @@ public:
 
 	void getShipSpeed(floatPOINT, floatPOINT, floatPOINT*, bool);
 	void moveObject(bool isEnemy);
+	void moveObject();
 	float angle;
 
 	floatPOINT* desintation;
@@ -72,7 +84,7 @@ public:
 
 	//Draw bitmap to the render target
 	void Draw();
-	floatPOINT Draw(floatPOINT);
+	void Draw(floatPOINT);
 };
 
 class PlanetObject : public AnimationObject
